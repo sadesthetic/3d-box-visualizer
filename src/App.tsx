@@ -1,0 +1,297 @@
+import { useState, useMemo } from 'react';
+import { Visualizer } from './components/Visualizer';
+import type { Dimensions } from './lib/packing';
+import { calculateBestPacking } from './lib/packing';
+import { Card, CardContent } from './components/ui/card';
+import { Input } from './components/ui/input';
+import { Label } from './components/ui/label';
+import { Button } from './components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
+import { Separator } from './components/ui/separator';
+import { Badge } from './components/ui/badge';
+import { Box, Container, Info, Maximize2, RotateCcw, TrendingUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+
+export default function App() {
+  const [unit, setUnit] = useState<'in' | 'cm'>('in');
+  const [item, setItem] = useState<Dimensions>({ length: 10, width: 6, height: 4 });
+  const [container, setContainer] = useState<Dimensions>({ length: 20, width: 20, height: 20 });
+  const [showResult, setShowResult] = useState(false);
+
+  const result = useMemo(() => {
+    return calculateBestPacking(item, container);
+  }, [item, container]);
+
+  const handleItemChange = (key: keyof Dimensions, value: string) => {
+    const num = parseFloat(value) || 0;
+    setItem((prev) => ({ ...prev, [key]: num }));
+    setShowResult(false);
+  };
+
+  const handleContainerChange = (key: keyof Dimensions, value: string) => {
+    const num = parseFloat(value) || 0;
+    setContainer((prev) => ({ ...prev, [key]: num }));
+    setShowResult(false);
+  };
+
+  return (
+    <div className="flex h-screen w-full bg-slate-950 text-slate-50 font-sans overflow-hidden">
+      {/* Sidebar */}
+      <aside className="w-96 border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl flex flex-col z-10 shadow-2xl overflow-y-auto">
+        <div className="p-6 border-b border-slate-800">
+          <div className="flex items-center gap-2 mb-1">
+            <Box className="w-6 h-6 text-sky-400" />
+            <h1 className="text-xl font-bold tracking-tight uppercase italic">Packing Optimizer</h1>
+          </div>
+          <p className="text-xs text-slate-400 font-mono">v1.0.4 // 6-DOF KINETIC ENGINE</p>
+        </div>
+
+        <div className="flex-1 space-y-6 p-6">
+          {/* Unit Toggle */}
+          <section className="space-y-3">
+            <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Measurement System</Label>
+            <Tabs value={unit} onValueChange={(v) => setUnit(v as 'in' | 'cm')} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-slate-950 border border-slate-800">
+                <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-xs font-bold">INCHES</TabsTrigger>
+                <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-xs font-bold">CENTIMETERS</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </section>
+
+          <Separator className="bg-slate-800" />
+
+          {/* Item Dimensions */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Item Dimensions (Small)</Label>
+              <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400">INPUT_A</Badge>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="iL" className="text-[10px] text-slate-400">LENGTH</Label>
+                <Input
+                  id="iL"
+                  type="number"
+                  value={item.length}
+                  onChange={(e) => handleItemChange('length', e.target.value)}
+                  className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="iW" className="text-[10px] text-slate-400">WIDTH</Label>
+                <Input
+                  id="iW"
+                  type="number"
+                  value={item.width}
+                  onChange={(e) => handleItemChange('width', e.target.value)}
+                  className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="iH" className="text-[10px] text-slate-400">HEIGHT</Label>
+                <Input
+                  id="iH"
+                  type="number"
+                  value={item.height}
+                  onChange={(e) => handleItemChange('height', e.target.value)}
+                  className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Container Dimensions */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Container Dimensions</Label>
+              <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400">INPUT_B</Badge>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="cL" className="text-[10px] text-slate-400">LENGTH</Label>
+                <Input
+                  id="cL"
+                  type="number"
+                  value={container.length}
+                  onChange={(e) => handleContainerChange('length', e.target.value)}
+                  className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cW" className="text-[10px] text-slate-400">WIDTH</Label>
+                <Input
+                  id="cW"
+                  type="number"
+                  value={container.width}
+                  onChange={(e) => handleContainerChange('width', e.target.value)}
+                  className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cH" className="text-[10px] text-slate-400">HEIGHT</Label>
+                <Input
+                  id="cH"
+                  type="number"
+                  value={container.height}
+                  onChange={(e) => handleContainerChange('height', e.target.value)}
+                  className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                />
+              </div>
+            </div>
+          </section>
+
+          <div className="grid grid-cols-1 gap-3 pt-2">
+            <Button 
+              onClick={() => setShowResult(true)}
+              className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold uppercase tracking-tighter"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Calculate Packing
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowResult(false);
+                setItem({ length: 10, width: 6, height: 4 });
+                setContainer({ length: 20, width: 20, height: 20 });
+              }}
+              className="w-full border-slate-800 hover:bg-slate-800 text-slate-400 text-xs uppercase"
+            >
+              <RotateCcw className="w-3 h-3 mr-2" />
+              Reset Parameters
+            </Button>
+          </div>
+
+          {/* Metrics Section */}
+          <AnimatePresence>
+            {showResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="space-y-4"
+              >
+                <Separator className="bg-slate-800" />
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Efficiency Metrics</Label>
+                  <div className="flex items-center gap-1">
+                    <div className={`w-2 h-2 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
+                    <span className="text-[9px] font-mono text-slate-400">LIVE_FEED</span>
+                  </div>
+                </div>
+
+                <Card className="bg-slate-950 border-slate-800 shadow-inner">
+                  <CardContent className="p-4 space-y-4">
+                    <div className="flex justify-between items-end">
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-slate-500 uppercase font-bold">Units Packed</p>
+                        <p className="text-3xl font-black text-sky-400 font-mono tracking-tighter">{result.count}</p>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <p className="text-[10px] text-slate-500 uppercase font-bold">Arrangement</p>
+                        <p className="text-sm font-mono text-slate-300">{result.layout[0]} × {result.layout[1]} × {result.layout[2]}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-bold uppercase">
+                        <span className="text-slate-500">Volume Efficiency</span>
+                        <span className="text-sky-400">{result.efficiency.toFixed(1)}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${result.efficiency}%` }}
+                          className={`h-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[10px] font-mono">
+                      <span className="text-slate-500 uppercase">Wasted Space</span>
+                      <span className="text-rose-400">{result.waste.toFixed(1)} {unit}³</span>
+                    </div>
+
+                    {result.count > 0 && (
+                      <div className="p-3 bg-sky-500/5 border border-sky-500/20 rounded-md flex gap-3">
+                        <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-sky-200/80 leading-relaxed italic">
+                          {container.length % result.orientation.length > 0 
+                            ? `Tip: Reduce length by ${(container.length % result.orientation.length).toFixed(1)}${unit} to minimize waste.`
+                            : "Optimal configuration found for the given orientation."}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="p-6 border-t border-slate-800 bg-slate-950/50">
+          <p className="text-[10px] text-slate-600 font-mono text-center">
+            © 2024 PACKING_SYSTEMS_INTL // ALL_RIGHTS_RESERVED
+          </p>
+        </div>
+      </aside>
+
+      {/* Main Viewport */}
+      <main className="flex-1 relative">
+        <Visualizer 
+          item={item} 
+          container={container} 
+          result={showResult ? result : { count: 0, orientation: item, layout: [0,0,0], efficiency: 0, waste: 0 }} 
+          unit={unit}
+        />
+
+        {/* HUD Overlays */}
+        <div className="absolute top-6 right-6 flex flex-col gap-3 items-end pointer-events-none">
+          <div className="bg-slate-900/80 backdrop-blur border border-slate-800 p-3 rounded-lg shadow-xl pointer-events-auto">
+            <div className="flex items-center gap-4">
+              <div className="space-y-1">
+                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Camera Mode</p>
+                <p className="text-xs font-mono text-sky-400">ORBIT_CONTROL_ACTIVE</p>
+              </div>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800" onClick={() => window.location.reload()}>
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/80 backdrop-blur border border-slate-800 p-3 rounded-lg shadow-xl">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-sky-500 rounded-full" />
+                <p className="text-[9px] text-slate-400 uppercase font-bold">Left Click: Orbit</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-slate-600 rounded-full" />
+                <p className="text-[9px] text-slate-400 uppercase font-bold">Right Click: Pan</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-slate-600 rounded-full" />
+                <p className="text-[9px] text-slate-400 uppercase font-bold">Scroll: Zoom</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Status Bar */}
+        <div className="absolute bottom-6 left-6 right-6 flex justify-between items-center pointer-events-none">
+          <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Maximize2 className="w-3 h-3 text-sky-400" />
+              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Viewport: 1920x1080_RENDER_60FPS</span>
+            </div>
+            <Separator orientation="vertical" className="h-3 bg-slate-700" />
+            <div className="flex items-center gap-2">
+              <Container className="w-3 h-3 text-sky-400" />
+              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Engine: THREE_JS_R128</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
