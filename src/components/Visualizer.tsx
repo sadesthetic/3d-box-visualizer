@@ -21,6 +21,11 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
   const mainBoxRef = useRef<THREE.Mesh | null>(null);
   const containerWireframeRef = useRef<THREE.Group | null>(null);
   const packedGroupRef = useRef<THREE.Group | null>(null);
+  const highlightRef = useRef(highlightContainer);
+
+  useEffect(() => {
+    highlightRef.current = highlightContainer;
+  }, [highlightContainer]);
 
   const [selectedFace, setSelectedFace] = useState<{ width: number, height: number } | null>(null);
   const pointerDownPos = useRef<{ x: number, y: number } | null>(null);
@@ -74,10 +79,31 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
     const mountNode = mountRef.current;
     
     // ANIMATE LOOP
+    const clock = new THREE.Clock();
     let animationId: number;
     const animate = () => {
       animationId = requestAnimationFrame(animate);
       controls.update();
+
+      const time = clock.getElapsedTime();
+      if (sceneRef.current) {
+        const lines = sceneRef.current.getObjectByName("ContainerLines") as THREE.LineSegments;
+        if (lines && lines.material instanceof THREE.LineBasicMaterial) {
+            if (highlightRef.current) {
+                // Pulsating glow effect
+                const glow = 0.5 + 0.5 * Math.sin(time * 6);
+                lines.material.opacity = 0.5 + glow * 0.5;
+                const baseColor = new THREE.Color(0x00ffcc);
+                const brightColor = new THREE.Color(0xffffff);
+                lines.material.color.lerpColors(baseColor, brightColor, glow * 0.4);
+            } else if (lines.material.opacity !== 0.9) {
+                // Reset state when highlight is toggled off
+                lines.material.opacity = 0.9;
+                lines.material.color.setHex(0xffffff);
+            }
+        }
+      }
+
       renderer.render(scene, camera);
     };
     animate();
@@ -213,18 +239,6 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
       packedGroupRef.current = packedGroup;
     }
   }, [item, container, result, unit]);
-
-  // Handle dynamic container highlighting without full re-render
-  useEffect(() => {
-     if (!containerWireframeRef.current) return;
-     
-     const contLines = containerWireframeRef.current.children.find(child => child.name === "ContainerLines") as THREE.LineSegments;
-     if (contLines && contLines.material instanceof THREE.LineBasicMaterial) {
-         contLines.material.color.setHex(highlightContainer ? 0x00ffcc : 0xffffff);
-         contLines.material.opacity = highlightContainer ? 1.0 : 0.9;
-         contLines.material.needsUpdate = true;
-     }
-  }, [highlightContainer]);
 
   // Handle Raycasting for Face clicking
   const handleClick = (e: React.MouseEvent | React.PointerEvent) => {
