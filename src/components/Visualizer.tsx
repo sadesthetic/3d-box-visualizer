@@ -325,24 +325,24 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
     const viewH = selectedFace.height * scale;
 
     return (
-      <div className="absolute bottom-6 right-6 bg-slate-900/90 border border-slate-700/50 rounded-xl p-4 shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-none">
+      <div className="absolute top-4 left-4 md:top-auto md:bottom-6 md:right-6 md:left-auto bg-slate-900/90 border border-slate-700/50 rounded-xl p-4 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-5 md:slide-in-from-bottom-5 fade-in duration-300 pointer-events-none scale-90 md:scale-100 origin-top-left md:origin-bottom-right">
         <div className="flex justify-between items-center mb-3">
             <h3 className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-              Vista 2D (Cara Seleccionada)
+              2D View (Selected Face)
             </h3>
         </div>
         
         <div className="flex flex-col items-center justify-center p-2 min-w-[160px] min-h-[160px]">
-          <div className="text-sky-400/80 text-[11px] font-mono mb-1">{selectedFace.width} {unit}</div>
+          <div className="text-sky-400/80 text-[11px] font-mono mb-1">{selectedFace.width.toFixed(1)} {unit}</div>
           <div className="flex items-center gap-2">
-            <div className="text-sky-400/80 text-[11px] font-mono -rotate-90 origin-center whitespace-nowrap">{selectedFace.height} {unit}</div>
+            <div className="text-sky-400/80 text-[11px] font-mono -rotate-90 origin-center whitespace-nowrap">{selectedFace.height.toFixed(1)} {unit}</div>
             
             <div 
               className="relative border-2 border-sky-400/60 bg-sky-500/10 shadow-[0_0_15px_rgba(56,189,248,0.15)] flex items-center justify-center transition-all duration-500 ease-out"
               style={{
-                width: `${viewW}px`,
-                height: `${viewH}px`
+                width: `${Math.max(1, viewW)}px`,
+                height: `${Math.max(1, viewH)}px`
               }}
             >
               <div className="absolute opacity-0 hover:opacity-100 transition-opacity inset-0 flex items-center justify-center bg-sky-500/20">
@@ -352,12 +352,12 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
               </div>
             </div>
             {/* Spacer to balance the rotated height text */}
-            <div className="w-[11px] opacity-0 overflow-hidden">{selectedFace.height}</div> 
+            <div className="w-[11px] opacity-0 overflow-hidden">{selectedFace.height.toFixed(1)}</div> 
           </div>
         </div>
         
         <div className="mt-2 text-center">
-            <p className="text-[10px] text-slate-500">Selecciona otra cara para actualizar</p>
+            <p className="text-[10px] text-slate-500">Select another face to update</p>
         </div>
       </div>
     );

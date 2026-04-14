@@ -13,26 +13,50 @@ import { Box, Container, Info, Maximize2, RotateCcw, TrendingUp, Lightbulb } fro
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const [unit, setUnit] = useState<'in' | 'cm'>('in');
-  const [item, setItem] = useState<Dimensions>({ length: 10, width: 6, height: 4 });
-  const [container, setContainer] = useState<Dimensions>({ length: 20, width: 20, height: 20 });
+  const [itemUnit, setItemUnit] = useState<'in' | 'cm'>('cm');
+  const [containerUnit, setContainerUnit] = useState<'in' | 'cm'>('in');
+  
+  const [item, setItem] = useState({ length: '10', width: '6', height: '4' });
+  const [container, setContainer] = useState({ length: '20', width: '20', height: '20' });
+  
   const [showResult, setShowResult] = useState(false);
   const [highlightContainer, setHighlightContainer] = useState(false);
 
   const result = useMemo(() => {
-    return calculateBestPacking(item, container);
-  }, [item, container]);
+    const parsedItem = {
+      length: parseFloat(item.length) || 0,
+      width: parseFloat(item.width) || 0,
+      height: parseFloat(item.height) || 0,
+    };
+    const parsedContainer = {
+      length: parseFloat(container.length) || 0,
+      width: parseFloat(container.width) || 0,
+      height: parseFloat(container.height) || 0,
+    };
+
+    const conversionFactor = itemUnit === containerUnit ? 1 : (itemUnit === 'cm' && containerUnit === 'in' ? (1/2.54) : 2.54);
+
+    const convertedItem = {
+      length: parsedItem.length * conversionFactor,
+      width: parsedItem.width * conversionFactor,
+      height: parsedItem.height * conversionFactor,
+    };
+
+    return calculateBestPacking(convertedItem, parsedContainer);
+  }, [item, container, itemUnit, containerUnit]);
 
   const handleItemChange = (key: keyof Dimensions, value: string) => {
-    const num = parseFloat(value) || 0;
-    setItem((prev) => ({ ...prev, [key]: num }));
-    setShowResult(false);
+    if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
+      setItem((prev) => ({ ...prev, [key]: value }));
+      setShowResult(false);
+    }
   };
 
   const handleContainerChange = (key: keyof Dimensions, value: string) => {
-    const num = parseFloat(value) || 0;
-    setContainer((prev) => ({ ...prev, [key]: num }));
-    setShowResult(false);
+    if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
+      setContainer((prev) => ({ ...prev, [key]: value }));
+      setShowResult(false);
+    }
   };
 
   return (
@@ -49,14 +73,25 @@ export default function App() {
 
         <div className="flex-1 space-y-6 p-6">
           {/* Unit Toggle */}
-          <section className="space-y-3">
-            <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Measurement System</Label>
-            <Tabs value={unit} onValueChange={(v) => setUnit(v as 'in' | 'cm')} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-slate-950 border border-slate-800">
-                <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-xs font-bold">INCHES</TabsTrigger>
-                <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-xs font-bold">CENTIMETERS</TabsTrigger>
-              </TabsList>
-            </Tabs>
+          <section className="grid grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Item Unit</Label>
+              <Tabs value={itemUnit} onValueChange={(v) => setItemUnit(v as 'in' | 'cm')} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-slate-950 border border-slate-800">
+                  <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">IN</TabsTrigger>
+                  <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">CM</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            <div className="space-y-3">
+              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Container Unit</Label>
+              <Tabs value={containerUnit} onValueChange={(v) => setContainerUnit(v as 'in' | 'cm')} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-slate-950 border border-slate-800">
+                  <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">IN</TabsTrigger>
+                  <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">CM</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </section>
 
           <Separator className="bg-slate-800" />
@@ -153,8 +188,8 @@ export default function App() {
               variant="outline" 
               onClick={() => {
                 setShowResult(false);
-                setItem({ length: 10, width: 6, height: 4 });
-                setContainer({ length: 20, width: 20, height: 20 });
+                setItem({ length: '10', width: '6', height: '4' });
+                setContainer({ length: '20', width: '20', height: '20' });
               }}
               className="w-full border-slate-800 hover:bg-slate-800 text-slate-400 text-xs uppercase"
             >
@@ -210,7 +245,7 @@ export default function App() {
 
                     <div className="flex justify-between items-center text-[10px] font-mono">
                       <span className="text-slate-500 uppercase">Wasted Space</span>
-                      <span className="text-rose-400">{result.waste.toFixed(1)} {unit}³</span>
+                      <span className="text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
                     </div>
 
                     <div className="pt-2">
@@ -229,8 +264,8 @@ export default function App() {
                       <div className="p-3 bg-sky-500/5 border border-sky-500/20 rounded-md flex gap-3">
                         <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
                         <p className="text-[11px] text-sky-200/80 leading-relaxed italic">
-                          {container.length % result.orientation.length > 0 
-                            ? `Tip: Reduce length by ${(container.length % result.orientation.length).toFixed(1)}${unit} to minimize waste.`
+                          {parseFloat(container.length) % result.orientation.length > 0 
+                            ? `Tip: Reduce length by ${(parseFloat(container.length) % result.orientation.length).toFixed(1)}${containerUnit} to minimize waste.`
                             : "Optimal configuration found for the given orientation."}
                         </p>
                       </div>
@@ -252,10 +287,10 @@ export default function App() {
       {/* Main Viewport - Top half on mobile */}
       <main className="w-full h-[45vh] md:h-auto md:flex-1 relative shrink-0">
         <Visualizer 
-          item={item} 
-          container={container} 
-          result={showResult ? result : { count: 0, items: [], orientation: item, layout: [0,0,0], efficiency: 0, waste: 0 }} 
-          unit={unit}
+          item={{ length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }} 
+          container={{ length: parseFloat(container.length)||0, width: parseFloat(container.width)||0, height: parseFloat(container.height)||0 }} 
+          result={showResult ? result : { count: 0, items: [], orientation: { length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }, layout: [0,0,0], efficiency: 0, waste: 0 }} 
+          unit={containerUnit}
           highlightContainer={highlightContainer}
         />
 
