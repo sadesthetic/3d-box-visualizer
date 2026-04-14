@@ -36,9 +36,9 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-950 text-slate-50 font-sans overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-96 border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl flex flex-col z-10 shadow-2xl overflow-y-auto">
+    <div className="flex flex-col-reverse md:flex-row h-screen w-full bg-slate-950 text-slate-50 font-sans overflow-hidden">
+      {/* Sidebar - Acts as a bottom sheet on mobile */}
+      <aside className="w-full h-[55vh] md:h-auto md:w-96 border-t md:border-t-0 md:border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl flex flex-col z-10 shadow-2xl overflow-y-auto shrink-0 md:shrink">
         <div className="p-6 border-b border-slate-800">
           <div className="flex items-center gap-2 mb-1">
             <Box className="w-6 h-6 text-sky-400" />
@@ -249,8 +249,8 @@ export default function App() {
         </div>
       </aside>
 
-      {/* Main Viewport */}
-      <main className="flex-1 relative">
+      {/* Main Viewport - Top half on mobile */}
+      <main className="w-full h-[45vh] md:h-auto md:flex-1 relative shrink-0">
         <Visualizer 
           item={item} 
           container={container} 
@@ -259,8 +259,8 @@ export default function App() {
           highlightContainer={highlightContainer}
         />
 
-        {/* HUD Overlays */}
-        <div className="absolute top-6 right-6 flex flex-col gap-3 items-end pointer-events-none">
+        {/* HUD Overlays - Hidden on mobile for cleaner view */}
+        <div className="hidden md:flex absolute top-6 right-6 flex-col gap-3 items-end pointer-events-none">
           <div className="bg-slate-900/80 backdrop-blur border border-slate-800 p-3 rounded-lg shadow-xl pointer-events-auto">
             <div className="flex items-center gap-4">
               <div className="space-y-1">
@@ -291,8 +291,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Bottom Status Bar */}
-        <div className="absolute bottom-6 left-6 right-6 flex justify-between items-center pointer-events-none">
+        {/* Bottom Status Bar - Hidden on mobile */}
+        <div className="hidden md:flex absolute bottom-6 left-6 right-6 justify-between items-center pointer-events-none">
           <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Maximize2 className="w-3 h-3 text-sky-400" />
