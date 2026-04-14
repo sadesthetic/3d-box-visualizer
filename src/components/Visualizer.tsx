@@ -154,18 +154,18 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
 
       // Thicker and brighter edges for container to understand context better
       const contEdges = new THREE.EdgesGeometry(contGeo);
-      const edgeColor = highlightContainer ? 0x00ffcc : 0xffffff;
-      const edgeOpacity = highlightContainer ? 1.0 : 0.9;
       
       const contLines = new THREE.LineSegments(
           contEdges, 
           new THREE.LineBasicMaterial({ 
-              color: edgeColor, 
-              opacity: edgeOpacity, 
+              color: 0xffffff, 
+              opacity: 0.9, 
               transparent: true, 
               depthWrite: false 
           })
       );
+      // Let's name the component to easily find it later
+      contLines.name = "ContainerLines";
       contGroup.add(contLines);
 
       contGroup.position.y = cH / 2;
@@ -185,6 +185,9 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
               color: 0x38bdf8, 
               transparent: true, 
               opacity: 0.6,
+              polygonOffset: true,
+              polygonOffsetFactor: 1,
+              polygonOffsetUnits: 1
           });
           const m = new THREE.Mesh(itemGeo, itemMat);
           
@@ -209,7 +212,19 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
       scene.add(packedGroup);
       packedGroupRef.current = packedGroup;
     }
-  }, [item, container, result, unit, highlightContainer]);
+  }, [item, container, result, unit]);
+
+  // Handle dynamic container highlighting without full re-render
+  useEffect(() => {
+     if (!containerWireframeRef.current) return;
+     
+     const contLines = containerWireframeRef.current.children.find(child => child.name === "ContainerLines") as THREE.LineSegments;
+     if (contLines && contLines.material instanceof THREE.LineBasicMaterial) {
+         contLines.material.color.setHex(highlightContainer ? 0x00ffcc : 0xffffff);
+         contLines.material.opacity = highlightContainer ? 1.0 : 0.9;
+         contLines.material.needsUpdate = true;
+     }
+  }, [highlightContainer]);
 
   // Handle Raycasting for Face clicking
   const handleClick = (e: React.MouseEvent | React.PointerEvent) => {

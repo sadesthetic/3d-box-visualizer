@@ -139,15 +139,6 @@ export default function App() {
                 />
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setHighlightContainer(!highlightContainer)}
-              className={`w-full text-xs font-mono border-slate-700 mt-2 transition-colors duration-300 ${highlightContainer ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'hover:bg-slate-800 text-slate-400'}`}
-            >
-              <Lightbulb className={`w-3 h-3 mr-2 ${highlightContainer ? 'text-emerald-400' : ''}`} />
-              {highlightContainer ? 'CONTAINER HIGHLIGHTED' : 'HIGHLIGHT CONTAINER'}
-            </Button>
           </section>
 
           <div className="grid grid-cols-1 gap-3 pt-2">
@@ -220,6 +211,18 @@ export default function App() {
                     <div className="flex justify-between items-center text-[10px] font-mono">
                       <span className="text-slate-500 uppercase">Wasted Space</span>
                       <span className="text-rose-400">{result.waste.toFixed(1)} {unit}³</span>
+                    </div>
+
+                    <div className="pt-2">
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => setHighlightContainer(!highlightContainer)}
+                         className={`w-full text-xs font-mono border-slate-700 transition-colors duration-300 ${highlightContainer ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'hover:bg-slate-800 text-slate-400'}`}
+                       >
+                         <Lightbulb className={`w-3 h-3 mr-2 ${highlightContainer ? 'text-emerald-400' : ''}`} />
+                         {highlightContainer ? 'CONTAINER HIGHLIGHTED' : 'HIGHLIGHT CONTAINER'}
+                       </Button>
                     </div>
 
                     {result.count > 0 && (
