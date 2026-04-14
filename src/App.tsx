@@ -305,6 +305,7 @@ export default function App() {
           container={{ length: parseFloat(container.length)||0, width: parseFloat(container.width)||0, height: parseFloat(container.height)||0 }} 
           result={showResult ? result : { count: 0, items: [], orientation: { length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }, layout: [0,0,0], efficiency: 0, waste: 0 }} 
           unit={containerUnit}
+          itemUnit={itemUnit}
           highlightContainer={highlightContainer}
         />
 

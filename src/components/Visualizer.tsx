@@ -8,10 +8,11 @@ interface VisualizerProps {
   container: Dimensions;
   result: PackingResult;
   unit: 'in' | 'cm';
+  itemUnit: 'in' | 'cm';
   highlightContainer?: boolean;
 }
 
-export function Visualizer({ item, container, result, unit, highlightContainer = false }: VisualizerProps) {
+export function Visualizer({ item, container, result, unit, itemUnit, highlightContainer = false }: VisualizerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -28,7 +29,6 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
   }, [highlightContainer]);
 
   const [selectedFace, setSelectedFace] = useState<{ width: number, height: number } | null>(null);
-  const [overrideUnit, setOverrideUnit] = useState<'in' | 'cm' | null>(null);
   const pointerDownPos = useRef<{ x: number, y: number } | null>(null);
 
   useEffect(() => {
@@ -321,7 +321,7 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
     if (!selectedFace) return null;
     
     // Determine effective unit
-    const effectiveUnit = overrideUnit || unit;
+    const effectiveUnit = itemUnit;
     
     // Convert if necessary
     let displayW = selectedFace.width;
@@ -340,10 +340,6 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
     const viewW = displayW * scale;
     const viewH = displayH * scale;
 
-    const handleSquareClick = () => {
-      setOverrideUnit(effectiveUnit === 'in' ? 'cm' : 'in');
-    };
-
     return (
       <div className="absolute top-4 left-4 md:top-auto md:bottom-6 md:right-6 md:left-auto bg-slate-900/90 border border-slate-700/50 rounded-xl p-4 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-5 md:slide-in-from-bottom-5 fade-in duration-300 pointer-events-none scale-90 md:scale-100 origin-top-left md:origin-bottom-right">
         <div className="flex justify-between items-center mb-3">
@@ -359,8 +355,7 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
             <div className="text-sky-400/80 text-[11px] font-mono -rotate-90 origin-center whitespace-nowrap">{displayH.toFixed(1)} {effectiveUnit}</div>
             
             <div 
-              className="relative border-2 border-sky-400/60 bg-sky-500/10 shadow-[0_0_15px_rgba(56,189,248,0.15)] flex items-center justify-center transition-all duration-500 ease-out pointer-events-auto cursor-pointer"
-              onClick={handleSquareClick}
+              className="relative border-2 border-sky-400/60 bg-sky-500/10 shadow-[0_0_15px_rgba(56,189,248,0.15)] flex items-center justify-center transition-all duration-500 ease-out"
               style={{
                 width: `${Math.max(1, viewW)}px`,
                 height: `${Math.max(1, viewH)}px`
@@ -377,7 +372,7 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
           </div>
         </div>
         
-        <div className="mt-2 text-center pointer-events-auto">
+        <div className="mt-2 text-center">
             <p className="text-[10px] text-slate-500">Select another face to update</p>
         </div>
       </div>
