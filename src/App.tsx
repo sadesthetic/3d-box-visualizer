@@ -9,7 +9,7 @@ import { Button } from './components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Separator } from './components/ui/separator';
 import { Badge } from './components/ui/badge';
-import { Box, Container, Info, Maximize2, RotateCcw, TrendingUp } from 'lucide-react';
+import { Box, Container, Info, Maximize2, RotateCcw, TrendingUp, Lightbulb } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -17,6 +17,7 @@ export default function App() {
   const [item, setItem] = useState<Dimensions>({ length: 10, width: 6, height: 4 });
   const [container, setContainer] = useState<Dimensions>({ length: 20, width: 20, height: 20 });
   const [showResult, setShowResult] = useState(false);
+  const [highlightContainer, setHighlightContainer] = useState(false);
 
   const result = useMemo(() => {
     return calculateBestPacking(item, container);
@@ -138,6 +139,15 @@ export default function App() {
                 />
               </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHighlightContainer(!highlightContainer)}
+              className={`w-full text-xs font-mono border-slate-700 mt-2 transition-colors duration-300 ${highlightContainer ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'hover:bg-slate-800 text-slate-400'}`}
+            >
+              <Lightbulb className={`w-3 h-3 mr-2 ${highlightContainer ? 'text-emerald-400' : ''}`} />
+              {highlightContainer ? 'CONTAINER HIGHLIGHTED' : 'HIGHLIGHT CONTAINER'}
+            </Button>
           </section>
 
           <div className="grid grid-cols-1 gap-3 pt-2">
@@ -241,8 +251,9 @@ export default function App() {
         <Visualizer 
           item={item} 
           container={container} 
-          result={showResult ? result : { count: 0, orientation: item, layout: [0,0,0], efficiency: 0, waste: 0 }} 
+          result={showResult ? result : { count: 0, items: [], orientation: item, layout: [0,0,0], efficiency: 0, waste: 0 }} 
           unit={unit}
+          highlightContainer={highlightContainer}
         />
 
         {/* HUD Overlays */}

@@ -8,9 +8,10 @@ interface VisualizerProps {
   container: Dimensions;
   result: PackingResult;
   unit: 'in' | 'cm';
+  highlightContainer?: boolean;
 }
 
-export function Visualizer({ item, container, result, unit }: VisualizerProps) {
+export function Visualizer({ item, container, result, unit, highlightContainer = false }: VisualizerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -110,8 +111,6 @@ export function Visualizer({ item, container, result, unit }: VisualizerProps) {
       packedGroupRef.current = null;
     }
 
-    // Reset selection when changing visualizer
-    setSelectedFace(null);
 
     if (!result || result.count === 0) {
       // Just show the main item box
@@ -155,9 +154,17 @@ export function Visualizer({ item, container, result, unit }: VisualizerProps) {
 
       // Thicker and brighter edges for container to understand context better
       const contEdges = new THREE.EdgesGeometry(contGeo);
+      const edgeColor = highlightContainer ? 0x00ffcc : 0xffffff;
+      const edgeOpacity = highlightContainer ? 1.0 : 0.9;
+      
       const contLines = new THREE.LineSegments(
           contEdges, 
-          new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.9, transparent: true, depthWrite: false })
+          new THREE.LineBasicMaterial({ 
+              color: edgeColor, 
+              opacity: edgeOpacity, 
+              transparent: true, 
+              depthWrite: false 
+          })
       );
       contGroup.add(contLines);
 
@@ -166,45 +173,43 @@ export function Visualizer({ item, container, result, unit }: VisualizerProps) {
       containerWireframeRef.current = contGroup;
 
       const packedGroup = new THREE.Group();
-      const [nx, ny, nz] = result.layout;
-      const { length: dx, width: dy, height: dz } = result.orientation;
-
-      const itemGeo = new THREE.BoxGeometry(dx, dz, dy); // Map to Three.js axes
-      const itemMat = new THREE.MeshPhongMaterial({ 
-          color: 0x38bdf8, 
-          transparent: true, 
-          opacity: 0.6,
-      });
-
-      const displayLimit = Math.min(result.count, 1000);
+      const displayLimit = Math.min(result.count, 2000); // Increased display limit for smaller items
       let created = 0;
 
-      for (let x = 0; x < nx; x++) {
-          for (let y = 0; y < ny; y++) {
-              for (let z = 0; z < nz; z++) {
-                  if (created >= displayLimit) break;
-                  const m = new THREE.Mesh(itemGeo, itemMat);
-                  
-                  // Positioning from corner
-                  m.position.set(
-                      (-cL / 2) + (x * dx) + (dx / 2),
-                      (z * dz) + (dz / 2),
-                      (-cW / 2) + (y * dy) + (dy / 2)
-                  );
+      for (const pItem of result.items) {
+          if (created >= displayLimit) break;
+          
+          // Map to Three.js axes: X=length, Y=height(Z), Z=width(Y)
+          const itemGeo = new THREE.BoxGeometry(pItem.dx, pItem.dz, pItem.dy);
+          const itemMat = new THREE.MeshPhongMaterial({ 
+              color: 0x38bdf8, 
+              transparent: true, 
+              opacity: 0.6,
+          });
+          const m = new THREE.Mesh(itemGeo, itemMat);
+          
+          // Positioning from corner
+          m.position.set(
+              (-cL / 2) + pItem.x + (pItem.dx / 2),
+              pItem.z + (pItem.dz / 2),
+              (-cW / 2) + pItem.y + (pItem.dy / 2)
+          );
 
-                  const e = new THREE.EdgesGeometry(itemGeo);
-                  const l = new THREE.LineSegments(e, new THREE.LineBasicMaterial({color: 0xffffff, opacity: 0.3, transparent: true}));
-                  m.add(l);
+          const e = new THREE.EdgesGeometry(itemGeo);
+          const l = new THREE.LineSegments(e, new THREE.LineBasicMaterial({color: 0xffffff, opacity: 0.3, transparent: true}));
+          m.add(l);
 
-                  packedGroup.add(m);
-                  created++;
-              }
-          }
+          // We also need to add userData to the mesh for the 2D viewer click logic
+          m.userData = { isPackedItem: true };
+
+          packedGroup.add(m);
+          created++;
       }
+
       scene.add(packedGroup);
       packedGroupRef.current = packedGroup;
     }
-  }, [item, container, result, unit]);
+  }, [item, container, result, unit, highlightContainer]);
 
   // Handle Raycasting for Face clicking
   const handleClick = (e: React.MouseEvent | React.PointerEvent) => {
