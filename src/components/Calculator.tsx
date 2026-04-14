@@ -6,6 +6,7 @@ import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { Card, CardContent } from './ui/card';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Button } from './ui/button';
 
 export function Calculator() {
   const [pricePerFt, setPricePerFt] = useState('');
@@ -102,7 +103,22 @@ export function Calculator() {
 
             {/* Dimensions */}
             <section className="space-y-4">
-               <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Box Layout</Label>
+               <div className="flex items-center justify-between">
+                 <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Box Layout</Label>
+                 <Button 
+                   variant="outline" 
+                   size="sm" 
+                   className="h-6 px-2 text-[10px] uppercase font-bold border-slate-800 bg-transparent text-sky-400 hover:bg-sky-500/10 hover:text-sky-300 transition-colors"
+                   onClick={() => {
+                     if (length) {
+                       setWidth(length);
+                       setHeight(length);
+                     }
+                   }}
+                 >
+                   <Package size={10} className="mr-1" /> Make Cubic
+                 </Button>
+               </div>
                <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] text-slate-400">LENGTH</Label>
@@ -169,10 +185,10 @@ export function Calculator() {
                       </div>
 
                       <div className="space-y-3 pt-2">
-                        <ResultItem label="Total Volume" value={`${results.totalCuFt.toFixed(4)} ft³`} unit="" />
+                        <ResultItem label="Total Volume" value={`${results.totalCuFt.toFixed(2)} ft³`} unit="" />
                         <div className="h-px bg-slate-800 w-full" />
-                        <ResultItem label="Yield per Inch" value={`$${results.yieldPerInch.toFixed(4)}`} unit="" highlight />
-                        <ResultItem label="Cost per Liter" value={`$${results.costPerLiter.toFixed(4)}`} unit="/ L" />
+                        <ResultItem label="Yield per Inch" value={`$${results.yieldPerInch.toFixed(3)}`} unit="" highlight />
+                        <ResultItem label="Cost per Liter" value={`$${results.costPerLiter.toFixed(3)}`} unit="/ L" />
                       </div>
                     </CardContent>
                   </Card>
