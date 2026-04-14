@@ -28,6 +28,7 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
   }, [highlightContainer]);
 
   const [selectedFace, setSelectedFace] = useState<{ width: number, height: number } | null>(null);
+  const [overrideUnit, setOverrideUnit] = useState<'in' | 'cm' | null>(null);
   const pointerDownPos = useRef<{ x: number, y: number } | null>(null);
 
   useEffect(() => {
@@ -319,10 +320,29 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
   const renderFaceViewer = () => {
     if (!selectedFace) return null;
     
+    // Determine effective unit
+    const effectiveUnit = overrideUnit || unit;
+    
+    // Convert if necessary
+    let displayW = selectedFace.width;
+    let displayH = selectedFace.height;
+    
+    if (unit === 'in' && effectiveUnit === 'cm') {
+       displayW *= 2.54;
+       displayH *= 2.54;
+    } else if (unit === 'cm' && effectiveUnit === 'in') {
+       displayW /= 2.54;
+       displayH /= 2.54;
+    }
+
     const maxDim = 140; // Max size for the view
-    const scale = maxDim / Math.max(selectedFace.width, selectedFace.height);
-    const viewW = selectedFace.width * scale;
-    const viewH = selectedFace.height * scale;
+    const scale = maxDim / Math.max(displayW, displayH);
+    const viewW = displayW * scale;
+    const viewH = displayH * scale;
+
+    const handleSquareClick = () => {
+      setOverrideUnit(effectiveUnit === 'in' ? 'cm' : 'in');
+    };
 
     return (
       <div className="absolute top-4 left-4 md:top-auto md:bottom-6 md:right-6 md:left-auto bg-slate-900/90 border border-slate-700/50 rounded-xl p-4 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-5 md:slide-in-from-bottom-5 fade-in duration-300 pointer-events-none scale-90 md:scale-100 origin-top-left md:origin-bottom-right">
@@ -334,12 +354,13 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
         </div>
         
         <div className="flex flex-col items-center justify-center p-2 min-w-[160px] min-h-[160px]">
-          <div className="text-sky-400/80 text-[11px] font-mono mb-1">{selectedFace.width.toFixed(1)} {unit}</div>
+          <div className="text-sky-400/80 text-[11px] font-mono mb-1">{displayW.toFixed(1)} {effectiveUnit}</div>
           <div className="flex items-center gap-2">
-            <div className="text-sky-400/80 text-[11px] font-mono -rotate-90 origin-center whitespace-nowrap">{selectedFace.height.toFixed(1)} {unit}</div>
+            <div className="text-sky-400/80 text-[11px] font-mono -rotate-90 origin-center whitespace-nowrap">{displayH.toFixed(1)} {effectiveUnit}</div>
             
             <div 
-              className="relative border-2 border-sky-400/60 bg-sky-500/10 shadow-[0_0_15px_rgba(56,189,248,0.15)] flex items-center justify-center transition-all duration-500 ease-out"
+              className="relative border-2 border-sky-400/60 bg-sky-500/10 shadow-[0_0_15px_rgba(56,189,248,0.15)] flex items-center justify-center transition-all duration-500 ease-out pointer-events-auto cursor-pointer"
+              onClick={handleSquareClick}
               style={{
                 width: `${Math.max(1, viewW)}px`,
                 height: `${Math.max(1, viewH)}px`
@@ -347,16 +368,16 @@ export function Visualizer({ item, container, result, unit, highlightContainer =
             >
               <div className="absolute opacity-0 hover:opacity-100 transition-opacity inset-0 flex items-center justify-center bg-sky-500/20">
                  <span className="text-sky-200 text-xs font-mono font-medium drop-shadow-md">
-                   Area: {(selectedFace.width * selectedFace.height).toFixed(1)}
+                   Area: {(displayW * displayH).toFixed(1)}
                  </span>
               </div>
             </div>
             {/* Spacer to balance the rotated height text */}
-            <div className="w-[11px] opacity-0 overflow-hidden">{selectedFace.height.toFixed(1)}</div> 
+            <div className="w-[11px] opacity-0 overflow-hidden">{displayH.toFixed(1)}</div> 
           </div>
         </div>
         
-        <div className="mt-2 text-center">
+        <div className="mt-2 text-center pointer-events-auto">
             <p className="text-[10px] text-slate-500">Select another face to update</p>
         </div>
       </div>
