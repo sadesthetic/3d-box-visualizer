@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Visualizer } from './components/Visualizer';
+import { Calculator } from './components/Calculator';
 import type { Dimensions } from './lib/packing';
 import { calculateBestPacking } from './lib/packing';
 import { Card, CardContent } from './components/ui/card';
@@ -21,6 +22,7 @@ export default function App() {
   
   const [showResult, setShowResult] = useState(false);
   const [highlightContainer, setHighlightContainer] = useState(false);
+  const [activeTab, setActiveTab] = useState('visualizer');
 
   const result = useMemo(() => {
     const parsedItem = {
@@ -60,16 +62,28 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col-reverse md:flex-row h-screen w-full bg-slate-950 text-slate-50 font-sans overflow-hidden">
-      {/* Sidebar - Acts as a bottom sheet on mobile */}
-      <aside className="w-full h-[55vh] md:h-auto md:w-96 border-t md:border-t-0 md:border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl flex flex-col z-10 shadow-2xl overflow-y-auto shrink-0 md:shrink">
-        <div className="p-6 border-b border-slate-800">
-          <div className="flex items-center gap-2 mb-1">
-            <Box className="w-6 h-6 text-sky-400" />
-            <h1 className="text-xl font-bold tracking-tight uppercase italic">Packing Optimizer</h1>
-          </div>
-          <p className="text-xs text-slate-400 font-mono">v1.0.4 // 6-DOF KINETIC ENGINE</p>
-        </div>
+    <div className="flex flex-col h-screen w-full bg-slate-950 text-slate-50 font-sans overflow-hidden">
+      {/* App Navigation */}
+      <div className="shrink-0 p-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-xl z-50 flex justify-center shadow-xl">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-sm">
+          <TabsList className="grid w-full grid-cols-2 bg-slate-950 border border-slate-800">
+            <TabsTrigger value="visualizer" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold tracking-widest">3D OPTIMIZER</TabsTrigger>
+            <TabsTrigger value="calculator" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 text-[10px] font-bold tracking-widest">CALCULATOR</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {activeTab === 'visualizer' ? (
+        <div className="flex-1 flex flex-col-reverse md:flex-row overflow-hidden relative">
+          {/* Sidebar - Acts as a bottom sheet on mobile */}
+          <aside className="w-full h-[55vh] md:h-full md:w-96 border-t md:border-t-0 md:border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl flex flex-col z-10 shadow-2xl overflow-y-auto shrink-0 md:shrink">
+            <div className="p-6 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Box className="w-6 h-6 text-sky-400" />
+                <h1 className="text-xl font-bold tracking-tight uppercase italic">Packing Optimizer</h1>
+              </div>
+              <p className="text-xs text-slate-400 font-mono">v1.0.4 // 6-DOF KINETIC ENGINE</p>
+            </div>
 
         <div className="flex-1 space-y-6 p-6">
           {/* Unit Toggle */}
@@ -341,6 +355,12 @@ export default function App() {
           </div>
         </div>
       </main>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto bg-slate-950">
+          <Calculator />
+        </div>
+      )}
     </div>
   );
 }
