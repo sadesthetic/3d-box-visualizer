@@ -345,8 +345,8 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        {/* Bottom Status Bar - Hidden on mobile */}
-        <div className="hidden md:flex absolute bottom-6 left-6 right-6 justify-between items-center pointer-events-none">
+        {/* Bottom Status Bar - Visible on both mobile and desktop */}
+        <div className="flex absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 justify-between items-center pointer-events-none z-20 origin-bottom-left scale-[0.7] md:scale-100">
           <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Maximize2 className="w-3 h-3 text-sky-400" />
