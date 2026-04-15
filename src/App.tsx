@@ -48,6 +48,14 @@ export default function App() {
     return calculateBestPacking(convertedItem, parsedContainer);
   }, [item, container, itemUnit, containerUnit]);
 
+  const itemVolFt3 = useMemo(() => {
+    const l = parseFloat(item.length) || 0;
+    const w = parseFloat(item.width) || 0;
+    const h = parseFloat(item.height) || 0;
+    const vol = l * w * h;
+    return itemUnit === 'in' ? vol / 1728 : vol / 28316.846592;
+  }, [item, itemUnit]);
+
   const handleItemChange = (key: keyof Dimensions, value: string) => {
     if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
       setItem((prev) => ({ ...prev, [key]: value }));
@@ -368,25 +376,22 @@ export default function App() {
           </div>
         </div>
 
-        {/* Bottom Content: Calculator Overlay & Status Bar - Hidden on mobile */}
-        <div className="hidden md:flex absolute bottom-6 left-6 right-6 justify-between items-end pointer-events-none">
-          {/* Calculator Overlay */}
-          <div className="pointer-events-auto origin-bottom-left scale-[0.75] xl:scale-[0.80] 2xl:scale-90 transition-transform flex items-end">
-            <div className="max-h-[60vh] max-w-[70vw] overflow-auto rounded-2xl shadow-2xl custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <Calculator />
-            </div>
-          </div>
-
-          {/* Status Bar */}
-          <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4 shrink-0 mb-4">
+        {/* Bottom Status Bar - Hidden on mobile */}
+        <div className="hidden md:flex absolute bottom-6 left-6 right-6 justify-between items-center pointer-events-none">
+          <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Maximize2 className="w-3 h-3 text-sky-400" />
-              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Viewport: 1920x1080_RENDER</span>
+              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Viewport: 1920x1080_RENDER_60FPS</span>
             </div>
             <Separator orientation="vertical" className="h-3 bg-slate-700" />
             <div className="flex items-center gap-2">
               <Container className="w-3 h-3 text-sky-400" />
-              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Engine: THREE_JS</span>
+              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Engine: THREE_JS_R128</span>
+            </div>
+            <Separator orientation="vertical" className="h-3 bg-slate-700" />
+            <div className="flex items-center gap-2">
+              <Box className="w-3 h-3 text-emerald-400" />
+              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-tighter">Item Vol: {itemVolFt3.toFixed(4)} FT³</span>
             </div>
           </div>
         </div>
