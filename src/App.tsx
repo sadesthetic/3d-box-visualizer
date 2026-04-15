@@ -368,17 +368,25 @@ export default function App() {
           </div>
         </div>
 
-        {/* Bottom Status Bar - Hidden on mobile */}
-        <div className="hidden md:flex absolute bottom-6 left-6 right-6 justify-between items-center pointer-events-none">
-          <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4">
+        {/* Bottom Content: Calculator Overlay & Status Bar - Hidden on mobile */}
+        <div className="hidden md:flex absolute bottom-6 left-6 right-6 justify-between items-end pointer-events-none">
+          {/* Calculator Overlay */}
+          <div className="pointer-events-auto origin-bottom-left scale-[0.75] xl:scale-[0.80] 2xl:scale-90 transition-transform flex items-end">
+            <div className="max-h-[60vh] max-w-[70vw] overflow-auto rounded-2xl shadow-2xl custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <Calculator />
+            </div>
+          </div>
+
+          {/* Status Bar */}
+          <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4 shrink-0 mb-4">
             <div className="flex items-center gap-2">
               <Maximize2 className="w-3 h-3 text-sky-400" />
-              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Viewport: 1920x1080_RENDER_60FPS</span>
+              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Viewport: 1920x1080_RENDER</span>
             </div>
             <Separator orientation="vertical" className="h-3 bg-slate-700" />
             <div className="flex items-center gap-2">
               <Container className="w-3 h-3 text-sky-400" />
-              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Engine: THREE_JS_R128</span>
+              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Engine: THREE_JS</span>
             </div>
           </div>
         </div>
