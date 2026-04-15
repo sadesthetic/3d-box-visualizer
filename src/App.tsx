@@ -58,13 +58,10 @@ export default function App() {
   const handleContainerChange = (key: keyof Dimensions, value: string) => {
     if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
       setContainer((prev) => {
-        const next = { ...prev, [key]: value };
-        if (forceSquareContainer) {
-          next.length = value;
-          next.width = value;
-          next.height = value;
+        if (forceSquareContainer && key === 'length') {
+          return { length: value, width: value, height: value };
         }
-        return next;
+        return { ...prev, [key]: value };
       });
       setShowResult(false);
     }
@@ -186,7 +183,7 @@ export default function App() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="cL" className="text-[10px] text-slate-400">LENGTH</Label>
+                <Label htmlFor="cL" className="text-[10px] text-slate-400">{forceSquareContainer ? 'SIZE (L, W, H)' : 'LENGTH'}</Label>
                 <Input
                   id="cL"
                   type="number"
@@ -202,7 +199,8 @@ export default function App() {
                   type="number"
                   value={container.width}
                   onChange={(e) => handleContainerChange('width', e.target.value)}
-                  className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                  disabled={forceSquareContainer}
+                  className={`bg-slate-950 border-slate-800 h-9 text-sm font-mono ${forceSquareContainer ? 'opacity-40 cursor-not-allowed' : 'focus:border-sky-500'}`}
                 />
               </div>
               <div className="space-y-1.5">
@@ -212,7 +210,8 @@ export default function App() {
                   type="number"
                   value={container.height}
                   onChange={(e) => handleContainerChange('height', e.target.value)}
-                  className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                  disabled={forceSquareContainer}
+                  className={`bg-slate-950 border-slate-800 h-9 text-sm font-mono ${forceSquareContainer ? 'opacity-40 cursor-not-allowed' : 'focus:border-sky-500'}`}
                 />
               </div>
             </div>

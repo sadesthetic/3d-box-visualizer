@@ -8,7 +8,20 @@ import { Card, CardContent } from './ui/card';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
 
+import { SplitSquareHorizontal, X } from 'lucide-react';
+
 export function Calculator() {
+  const [showComparison, setShowComparison] = useState(false);
+
+  return (
+    <div className={`flex w-full h-full items-start justify-center p-4 gap-4 overflow-y-auto ${showComparison ? 'flex-col md:flex-row md:items-center' : 'items-center'}`}>
+       <CalculatorCard isPrimary onCompareToggle={() => setShowComparison(!showComparison)} isComparing={showComparison} />
+       {showComparison && <CalculatorCard onRemove={() => setShowComparison(false)} />}
+    </div>
+  );
+}
+
+function CalculatorCard({ isPrimary, onCompareToggle, isComparing, onRemove }: { isPrimary?: boolean; onCompareToggle?: () => void; isComparing?: boolean; onRemove?: () => void }) {
   const [pricePerFt, setPricePerFt] = useState('');
   const [length, setLength] = useState('');
   const [width, setWidth] = useState('');
@@ -21,7 +34,6 @@ export function Calculator() {
     let w = parseFloat(width) || 0;
     let h = parseFloat(height) || 0;
 
-    // Convert to inches if input is in cm
     if (unit === 'cm') {
       l = l * 0.393701;
       w = w * 0.393701;
@@ -52,27 +64,50 @@ export function Calculator() {
   };
 
   return (
-    <div className="flex w-full h-full items-center justify-center p-4">
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl overflow-hidden radial-bg"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="w-full max-w-lg bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl overflow-hidden radial-bg shrink-0"
       >
         <div className="p-6 md:p-8">
-          <header className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-sky-500/20 rounded-xl text-sky-400 border border-sky-500/30">
-              <Package size={24} />
+          <header className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-sky-500/20 rounded-xl text-sky-400 border border-sky-500/30">
+                <Package size={24} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight uppercase italic text-slate-50">Box Calculator</h1>
+                <p className="text-[10px] text-slate-400 font-mono">{isPrimary ? "PRIMARY" : "COMPARISON"} ANALYSIS</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight uppercase italic text-slate-50">Box Calculator</h1>
-              <p className="text-[10px] text-slate-400 font-mono">COST & VOLUME ANALYSIS</p>
-            </div>
+            
+            {isPrimary ? (
+              <Button
+                variant={isComparing ? "secondary" : "outline"}
+                size="icon"
+                onClick={onCompareToggle}
+                className={`h-9 w-9 rounded-full transition-colors ${isComparing ? 'bg-sky-500/20 text-sky-400 hover:bg-sky-500/30' : 'border-slate-700 text-slate-400 hover:text-sky-400'}`}
+                title="Compare with another configuration"
+              >
+                <SplitSquareHorizontal size={16} />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onRemove}
+                className="h-9 w-9 rounded-full text-slate-400 hover:bg-rose-500/10 hover:text-rose-400"
+                title="Close comparison"
+              >
+                <X size={16} />
+              </Button>
+            )}
           </header>
 
           <Separator className="bg-slate-800 mb-6" />
 
           <div className="space-y-6">
-            {/* Price Input */}
             <section className="space-y-3">
               <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold flex items-center gap-1.5">
                 <DollarSign size={12} className="text-emerald-400" />
@@ -87,7 +122,6 @@ export function Calculator() {
               />
             </section>
 
-            {/* Unit Switch */}
             <section className="space-y-3">
               <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold flex items-center gap-1.5">
                 <Ruler size={12} className="text-sky-400" />
@@ -101,7 +135,6 @@ export function Calculator() {
               </Tabs>
             </section>
 
-            {/* Dimensions */}
             <section className="space-y-4">
                <div className="flex items-center justify-between">
                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Box Layout</Label>
@@ -152,7 +185,6 @@ export function Calculator() {
 
             <Separator className="bg-slate-800" />
 
-            {/* Results Section */}
             <AnimatePresence mode="wait">
               {results.hasInputs ? (
                 <motion.div
@@ -208,7 +240,6 @@ export function Calculator() {
           </div>
         </div>
       </motion.div>
-    </div>
   );
 }
 
