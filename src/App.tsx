@@ -59,9 +59,10 @@ export default function App() {
     if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
       setContainer((prev) => {
         const next = { ...prev, [key]: value };
-        if (forceSquareContainer && (key === 'length' || key === 'width')) {
+        if (forceSquareContainer) {
           next.length = value;
           next.width = value;
+          next.height = value;
         }
         return next;
       });
@@ -167,7 +168,7 @@ export default function App() {
                   onClick={() => {
                     setForceSquareContainer(!forceSquareContainer);
                     if (!forceSquareContainer) {
-                      setContainer(prev => ({ ...prev, width: prev.length }));
+                      setContainer(prev => ({ ...prev, width: prev.length, height: prev.length }));
                       setShowResult(false);
                     }
                   }}
@@ -176,9 +177,9 @@ export default function App() {
                       ? 'border-sky-500/50 text-sky-400 bg-sky-500/10' 
                       : 'border-slate-800 text-slate-500 hover:text-slate-400 bg-transparent'
                   }`}
-                  title="Make container square (width = length)"
+                  title="Make container a perfect cube (length = width = height)"
                 >
-                  SQUARE
+                  CUBE
                 </button>
                 <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400">INPUT_B</Badge>
               </div>
