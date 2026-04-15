@@ -23,6 +23,7 @@ export default function App() {
   const [showResult, setShowResult] = useState(false);
   const [highlightContainer, setHighlightContainer] = useState(false);
   const [activeTab, setActiveTab] = useState('visualizer');
+  const [forceSquareContainer, setForceSquareContainer] = useState(false);
 
   const result = useMemo(() => {
     const parsedItem = {
@@ -56,7 +57,14 @@ export default function App() {
 
   const handleContainerChange = (key: keyof Dimensions, value: string) => {
     if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
-      setContainer((prev) => ({ ...prev, [key]: value }));
+      setContainer((prev) => {
+        const next = { ...prev, [key]: value };
+        if (forceSquareContainer && (key === 'length' || key === 'width')) {
+          next.length = value;
+          next.width = value;
+        }
+        return next;
+      });
       setShowResult(false);
     }
   };
@@ -154,7 +162,26 @@ export default function App() {
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Container Dimensions</Label>
-              <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400">INPUT_B</Badge>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setForceSquareContainer(!forceSquareContainer);
+                    if (!forceSquareContainer) {
+                      setContainer(prev => ({ ...prev, width: prev.length }));
+                      setShowResult(false);
+                    }
+                  }}
+                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold transition-colors focus:outline-none ${
+                    forceSquareContainer 
+                      ? 'border-sky-500/50 text-sky-400 bg-sky-500/10' 
+                      : 'border-slate-800 text-slate-500 hover:text-slate-400 bg-transparent'
+                  }`}
+                  title="Make container square (width = length)"
+                >
+                  SQUARE
+                </button>
+                <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400">INPUT_B</Badge>
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
