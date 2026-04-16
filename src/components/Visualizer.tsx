@@ -23,11 +23,17 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
   const containerWireframeRef = useRef<THREE.Group | null>(null);
   const packedGroupRef = useRef<THREE.Group | null>(null);
   const highlightRef = useRef(highlightContainer);
+  const isRotatingRef = useRef(false);
   
   // Animation targets for fluidity
   const targetItemScale = useRef(new THREE.Vector3(1, 1, 1));
   const targetContainerScale = useRef(new THREE.Vector3(1, 1, 1));
   const targetPackedScale = useRef(new THREE.Vector3(1, 1, 1));
+  const targetPackedOpacity = useRef(0.6);
+  const currentPackedOpacity = useRef(0.6);
+  const targetPackedYOffset = useRef(0);
+  const currentPackedYOffset = useRef(0);
+  
 
   useEffect(() => {
     highlightRef.current = highlightContainer;
@@ -163,6 +169,11 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
     controls.target.set(0, 0, 0);
     controlsRef.current = controls;
 
+    const onStart = () => { isRotatingRef.current = true; };
+    const onEnd = () => { isRotatingRef.current = false; };
+    controls.addEventListener('start', onStart);
+    controls.addEventListener('end', onEnd);
+
     // RESIZE HANDLER
     const handleResize = () => {
       if (!mountRef.current) return;
@@ -187,10 +198,20 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       
       // Smooth transitions for fluidity
       const lerpFactor = 0.15;
+      const animFactor = 0.1; // Slower for subtle effects
       
+      // Rotation-based opacity masking (fixes Z-fighting pop)
+      if (isRotatingRef.current) {
+        targetPackedOpacity.current = 0.45;
+      } else {
+        targetPackedOpacity.current = 0.65;
+      }
+      
+      currentPackedOpacity.current = THREE.MathUtils.lerp(currentPackedOpacity.current, targetPackedOpacity.current, animFactor);
+      currentPackedYOffset.current = THREE.MathUtils.lerp(currentPackedYOffset.current, targetPackedYOffset.current, animFactor);
+
       if (mainBoxRef.current) {
         mainBoxRef.current.scale.lerp(targetItemScale.current, lerpFactor);
-        // Also ensure Y position (bottom-aligned) matches scale
         mainBoxRef.current.position.y = THREE.MathUtils.lerp(mainBoxRef.current.position.y, targetItemScale.current.y / 2, lerpFactor);
       }
       
@@ -201,6 +222,16 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       
       if (packedGroupRef.current) {
         packedGroupRef.current.scale.lerp(targetPackedScale.current, lerpFactor);
+        // Apply vertical slide offset
+        packedGroupRef.current.position.y = currentPackedYOffset.current;
+        // Apply dynamic opacity to all items in group
+        packedGroupRef.current.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.userData.isPackedItem) {
+            if (child.material instanceof THREE.Material) {
+              child.material.opacity = currentPackedOpacity.current;
+            }
+          }
+        });
       }
 
       if (sceneRef.current) {
@@ -229,6 +260,8 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       window.removeEventListener('resize', handleResize);
       canvas.removeEventListener('pointerdown', onCanvasPointerDown);
       canvas.removeEventListener('pointerup', onCanvasPointerUp);
+      controls.removeEventListener('start', onStart);
+      controls.removeEventListener('end', onEnd);
       cancelAnimationFrame(animationId);
       if (mountNode) {
         if (renderer.domElement.parentNode === mountNode) mountNode.removeChild(renderer.domElement);
@@ -358,13 +391,14 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
           const itemMat = new THREE.MeshPhongMaterial({ 
               color: 0x38bdf8, 
               transparent: true, 
-              opacity: 0.6,
+              opacity: 0, // Starts at 0 for fade-in
               polygonOffset: true,
               polygonOffsetFactor: 4,
               polygonOffsetUnits: 4,
               depthWrite: true
           });
           const m = new THREE.Mesh(itemGeo, itemMat);
+          m.userData = { isPackedItem: true };
           
           // Positioning from corner
           m.position.set(
@@ -384,9 +418,15 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
           created++;
       }
 
-      // Start from 0 scale for a "entry" animation
-      packedGroup.scale.set(0.8, 0.8, 0.8);
+      // Start from slight offset and zero opacity for a "entry" animation
+      packedGroup.scale.set(1, 1, 1);
       targetPackedScale.current.set(1, 1, 1);
+      
+      // Trigger animations
+      currentPackedOpacity.current = 0;
+      targetPackedOpacity.current = 0.65;
+      currentPackedYOffset.current = 2; // Start slightly above/below for slide
+      targetPackedYOffset.current = 0;
       
       scene.add(packedGroup);
       packedGroupRef.current = packedGroup;
