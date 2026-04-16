@@ -36,6 +36,63 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
   const [selectedFace, setSelectedFace] = useState<{ width: number, height: number } | null>(null);
   const pointerDownPos = useRef<{ x: number, y: number } | null>(null);
 
+  // Define handleCanvasClick as a stable callback to be used in event listeners
+  const handleCanvasClick = (e: PointerEvent, camera: THREE.PerspectiveCamera) => {
+    if (!mountRef.current) return;
+
+    const rect = mountRef.current.getBoundingClientRect();
+    const mouse = new THREE.Vector2();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    
+    const objectsToIntersect: THREE.Object3D[] = [];
+    if (mainBoxRef.current) objectsToIntersect.push(mainBoxRef.current);
+    if (packedGroupRef.current) objectsToIntersect.push(...packedGroupRef.current.children);
+
+    const intersects = raycaster.intersectObjects(objectsToIntersect, false);
+    
+    if (intersects.length > 0) {
+        const hit = intersects[0];
+        const normal = hit.face?.normal;
+        if (!normal) return;
+
+        const obj = hit.object as THREE.Mesh;
+        let dimX = 0, dimY = 0, dimZ = 0;
+        
+        if (obj === mainBoxRef.current) {
+            dimX = obj.scale.x; 
+            dimY = obj.scale.y; 
+            dimZ = obj.scale.z; 
+        } else {
+            const geo = obj.geometry as THREE.BoxGeometry;
+            dimX = geo.parameters.width;
+            dimY = geo.parameters.height;
+            dimZ = geo.parameters.depth;
+        }
+
+        const absNormal = new THREE.Vector3(Math.abs(normal.x), Math.abs(normal.y), Math.abs(normal.z));
+        let faceW = 0, faceH = 0;
+
+        if (absNormal.x > 0.5) {
+            faceW = dimZ; 
+            faceH = dimY;
+        } else if (absNormal.y > 0.5) {
+            faceW = dimX; 
+            faceH = dimZ;
+        } else if (absNormal.z > 0.5) {
+            faceW = dimX; 
+            faceH = dimY;
+        }
+        
+        setSelectedFace({ width: faceW, height: faceH });
+    } else {
+        setSelectedFace(null);
+    }
+  };
+
   useEffect(() => {
     if (!mountRef.current) return;
 
@@ -51,10 +108,16 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
     cameraRef.current = camera;
 
     // RENDERERS
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    const renderer = new THREE.WebGLRenderer({ 
+      antialias: true, 
+      alpha: true, 
+      powerPreference: 'high-performance',
+      logarithmicDepthBuffer: true
+    });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.autoClear = true;
+    renderer.sortObjects = true;
     
     // Clear mount point to prevent double-canvas in StrictMode
     if (mountRef.current) {
@@ -62,6 +125,28 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       mountRef.current.appendChild(renderer.domElement);
     }
     rendererRef.current = renderer;
+    
+    // ATTACH EVENTS DIRECTLY TO CANVAS (Avoids React layout thrashing)
+    const canvas = renderer.domElement;
+    const onCanvasPointerDown = (e: PointerEvent) => {
+      pointerDownPos.current = { x: e.clientX, y: e.clientY };
+    };
+    
+    const onCanvasPointerUp = (e: PointerEvent) => {
+      if (!pointerDownPos.current) return;
+      const dx = e.clientX - pointerDownPos.current.x;
+      const dy = e.clientY - pointerDownPos.current.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      
+      if (dist < 5 && camera) {
+        // Trigger click logic using the stored refs
+        handleCanvasClick(e, camera);
+      }
+      pointerDownPos.current = null;
+    };
+    
+    canvas.addEventListener('pointerdown', onCanvasPointerDown);
+    canvas.addEventListener('pointerup', onCanvasPointerUp);
     
     // LIGHTING
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -142,6 +227,8 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      canvas.removeEventListener('pointerdown', onCanvasPointerDown);
+      canvas.removeEventListener('pointerup', onCanvasPointerUp);
       cancelAnimationFrame(animationId);
       if (mountNode) {
         if (renderer.domElement.parentNode === mountNode) mountNode.removeChild(renderer.domElement);
@@ -267,15 +354,15 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       for (const pItem of result.items) {
           if (created >= displayLimit) break;
           
-          // Map to Three.js axes: X=length, Y=height(Z), Z=width(Y)
           const itemGeo = new THREE.BoxGeometry(pItem.dx, pItem.dz, pItem.dy);
           const itemMat = new THREE.MeshPhongMaterial({ 
               color: 0x38bdf8, 
               transparent: true, 
               opacity: 0.6,
               polygonOffset: true,
-              polygonOffsetFactor: 1,
-              polygonOffsetUnits: 1
+              polygonOffsetFactor: 4,
+              polygonOffsetUnits: 4,
+              depthWrite: true
           });
           const m = new THREE.Mesh(itemGeo, itemMat);
           
@@ -306,80 +393,7 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
     }
   }, [item, container, result, unit]);
 
-  // Handle Raycasting for Face clicking
-  const handleClick = (e: React.MouseEvent | React.PointerEvent) => {
-    if (!mountRef.current || !cameraRef.current || !sceneRef.current) return;
 
-    const rect = mountRef.current.getBoundingClientRect();
-    const mouse = new THREE.Vector2();
-    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, cameraRef.current);
-    
-    const objectsToIntersect: THREE.Object3D[] = [];
-    if (mainBoxRef.current) objectsToIntersect.push(mainBoxRef.current);
-    if (packedGroupRef.current) objectsToIntersect.push(...packedGroupRef.current.children);
-
-    const intersects = raycaster.intersectObjects(objectsToIntersect, false);
-    
-    if (intersects.length > 0) {
-        const hit = intersects[0];
-        const normal = hit.face?.normal;
-        if (!normal) return;
-
-        const obj = hit.object as THREE.Mesh;
-        let dimX = 0, dimY = 0, dimZ = 0;
-        
-        if (obj === mainBoxRef.current) {
-            // mainBox uses scale (length, height, width mapping)
-            dimX = obj.scale.x; 
-            dimY = obj.scale.y; 
-            dimZ = obj.scale.z; 
-        } else {
-            // packed objects use BoxGeometry sizes directly based on specific orientation
-            const geo = obj.geometry as THREE.BoxGeometry;
-            dimX = geo.parameters.width;
-            dimY = geo.parameters.height;
-            dimZ = geo.parameters.depth;
-        }
-
-        const absNormal = new THREE.Vector3(Math.abs(normal.x), Math.abs(normal.y), Math.abs(normal.z));
-        let faceW = 0, faceH = 0;
-
-        if (absNormal.x > 0.5) {
-            faceW = dimZ; // Face spanning Z and Y
-            faceH = dimY;
-        } else if (absNormal.y > 0.5) {
-            faceW = dimX; // Face spanning X and Z
-            faceH = dimZ;
-        } else if (absNormal.z > 0.5) {
-            faceW = dimX; // Face spanning X and Y
-            faceH = dimY;
-        }
-        
-        setSelectedFace({ width: faceW, height: faceH });
-    } else {
-        setSelectedFace(null);
-    }
-  };
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    pointerDownPos.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!pointerDownPos.current) return;
-    const dx = e.clientX - pointerDownPos.current.x;
-    const dy = e.clientY - pointerDownPos.current.y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    
-    if (dist < 5) {
-        handleClick(e);
-    }
-    pointerDownPos.current = null;
-  };
 
   // Rendering logic for bottom-right face viewer
   const renderFaceViewer = () => {
@@ -445,7 +459,7 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
   };
 
   return (
-    <div className="w-full h-full relative" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
+    <div className="w-full h-full relative">
       <div ref={mountRef} className="w-full h-full radial-bg" />
       {renderFaceViewer()}
     </div>
