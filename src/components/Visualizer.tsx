@@ -49,7 +49,7 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
+    renderer.autoClear = true;
     
     // Clear mount point to prevent double-canvas in StrictMode
     if (mountRef.current) {
@@ -57,14 +57,13 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       mountRef.current.appendChild(renderer.domElement);
     }
     rendererRef.current = renderer;
-
+    
     // LIGHTING
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(100, 100, 50);
-    directionalLight.castShadow = true;
     scene.add(directionalLight);
 
     // CONTROLS
@@ -113,9 +112,7 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
         }
       }
 
-      if (rendererRef.current && sceneRef.current && cameraRef.current) {
-        rendererRef.current.render(sceneRef.current, cameraRef.current);
-      }
+      renderer.render(scene, camera);
     };
     animate();
 
@@ -134,16 +131,40 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
     const scene = sceneRef.current;
     if (!scene) return;
 
+    // Helper to dispose objects
+    const disposeNode = (node: THREE.Object3D) => {
+        node.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                child.geometry.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            } else if (child instanceof THREE.LineSegments) {
+                child.geometry.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
+        });
+    };
+
     // Remove old elements
     if (mainBoxRef.current) {
+      disposeNode(mainBoxRef.current);
       scene.remove(mainBoxRef.current);
       mainBoxRef.current = null;
     }
     if (containerWireframeRef.current) {
+      disposeNode(containerWireframeRef.current);
       scene.remove(containerWireframeRef.current);
       containerWireframeRef.current = null;
     }
     if (packedGroupRef.current) {
+      disposeNode(packedGroupRef.current);
       scene.remove(packedGroupRef.current);
       packedGroupRef.current = null;
     }
@@ -180,11 +201,12 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       const contGeo = new THREE.BoxGeometry(cL, cH, cW);
       
       // Translucent container faces
-      const contMat = new THREE.MeshPhysicalMaterial({ 
+      const contMat = new THREE.MeshPhongMaterial({ 
           color: 0xffffff, 
           transparent: true, 
-          opacity: 0.05,
+          opacity: 0.1,
           side: THREE.BackSide,
+          depthWrite: false
       });
       const contMesh = new THREE.Mesh(contGeo, contMat);
       contGroup.add(contMesh);
