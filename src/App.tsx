@@ -3,14 +3,13 @@ import { Visualizer } from './components/Visualizer';
 import { Calculator } from './components/Calculator';
 import type { Dimensions } from './lib/packing';
 import { calculateBestPacking } from './lib/packing';
-import { Card, CardContent } from './components/ui/card';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Button } from './components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Separator } from './components/ui/separator';
 import { Badge } from './components/ui/badge';
-import { Box, Container, Info, Maximize2, RotateCcw, TrendingUp, Lightbulb } from 'lucide-react';
+import { Box, Container, Info, Maximize2, RotateCcw, Lightbulb } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
