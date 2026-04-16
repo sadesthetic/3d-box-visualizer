@@ -271,8 +271,8 @@ export default function App() {
       {/* Main Viewport - Top half on mobile */}
       <main className="w-full h-[45vh] md:h-auto md:flex-1 relative shrink-0 overflow-hidden">
         <motion.div 
-          initial={{ x: -120 }}
-          animate={{ x: -120 }}
+          initial={{ x: 0 }}
+          animate={{ x: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 100 }}
           className="w-full h-full"
         >

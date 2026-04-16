@@ -65,6 +65,8 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.enablePan = false;
+    // Set target offset to move the illustration to the left
+    controls.target.set(12, 0, 0);
     controlsRef.current = controls;
 
     // RESIZE HANDLER
