@@ -64,6 +64,7 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
     // CONTROLS
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+    controls.enablePan = false;
     controlsRef.current = controls;
 
     // RESIZE HANDLER
