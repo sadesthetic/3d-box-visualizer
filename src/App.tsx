@@ -280,7 +280,7 @@ export default function App() {
         />
 
         {/* HUD Overlays (Metrics overlay) - Visible across mobile and desktop */}
-        <div className="flex absolute top-4 right-4 md:top-6 md:right-6 flex-col gap-2 items-end pointer-events-none z-20 origin-top-right scale-[0.80] md:scale-100">
+        <div className="flex absolute top-4 right-4 md:top-6 md:right-32 flex-col gap-2 items-end pointer-events-none z-20 origin-top-right scale-[0.80] md:scale-100">
           <AnimatePresence>
             {showResult && (
               <motion.div
