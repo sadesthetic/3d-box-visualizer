@@ -2,14 +2,14 @@ import { useState, useMemo } from 'react';
 import { Visualizer } from './components/Visualizer';
 import { Calculator } from './components/Calculator';
 import type { Dimensions } from './lib/packing';
-import { calculateBestPacking, calculatePackingWithSecondary } from './lib/packing';
+import { calculateBestPacking } from './lib/packing';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Button } from './components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Separator } from './components/ui/separator';
 import { Badge } from './components/ui/badge';
-import { Box, Container, Info, Maximize2, RotateCcw, Lightbulb, TrendingUp, Trash2 } from 'lucide-react';
+import { Box, Container, Info, Maximize2, RotateCcw, Lightbulb, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -17,11 +17,9 @@ export default function App() {
   const [containerUnit, setContainerUnit] = useState<'in' | 'cm'>('in');
   
   const [item, setItem] = useState({ length: '10', width: '6', height: '4' });
-  const [secondaryItem, setSecondaryItem] = useState({ length: '5', width: '5', height: '5' });
   const [container, setContainer] = useState({ length: '20', width: '20', height: '20' });
   
   const [showResult, setShowResult] = useState(false);
-  const [showSecondary, setShowSecondary] = useState(false);
   const [highlightContainer, setHighlightContainer] = useState(false);
   const [activeTab, setActiveTab] = useState('visualizer');
   const [forceSquareContainer, setForceSquareContainer] = useState(false);
@@ -31,11 +29,6 @@ export default function App() {
       length: parseFloat(item.length) || 0,
       width: parseFloat(item.width) || 0,
       height: parseFloat(item.height) || 0,
-    };
-    const parsedSecondary = {
-      length: parseFloat(secondaryItem.length) || 0,
-      width: parseFloat(secondaryItem.width) || 0,
-      height: parseFloat(secondaryItem.height) || 0,
     };
     const parsedContainer = {
       length: parseFloat(container.length) || 0,
@@ -50,17 +43,9 @@ export default function App() {
       width: parsedItem.width * conversionFactor,
       height: parsedItem.height * conversionFactor,
     };
-    const convertedSecondary = {
-      length: parsedSecondary.length * conversionFactor,
-      width: parsedSecondary.width * conversionFactor,
-      height: parsedSecondary.height * conversionFactor,
-    };
 
-    if (showSecondary) {
-      return calculatePackingWithSecondary(convertedItem, convertedSecondary, parsedContainer);
-    }
     return calculateBestPacking(convertedItem, parsedContainer);
-  }, [item, secondaryItem, container, itemUnit, containerUnit, showSecondary]);
+  }, [item, container, itemUnit, containerUnit]);
 
   const itemVolFt3 = useMemo(() => {
     const l = parseFloat(item.length) || 0;
@@ -73,12 +58,6 @@ export default function App() {
   const handleItemChange = (key: keyof Dimensions, value: string) => {
     if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
       setItem((prev) => ({ ...prev, [key]: value }));
-    }
-  };
-
-  const handleSecondaryItemChange = (key: keyof Dimensions, value: string) => {
-    if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
-      setSecondaryItem((prev) => ({ ...prev, [key]: value }));
     }
   };
 
@@ -148,15 +127,6 @@ export default function App() {
               <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Item Dimensions (Small)</Label>
               <div className="flex items-center gap-1.5">
                 <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400 h-5 px-1.5 flex items-center justify-center">PRIMARY</Badge>
-                {!showSecondary && (
-                  <button
-                    onClick={() => setShowSecondary(true)}
-                    className="inline-flex items-center rounded-full border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-colors focus:outline-none px-2 py-0.5 text-[9px] font-semibold uppercase"
-                    title="Add Secondary Box"
-                  >
-                    + SEC
-                  </button>
-                )}
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -193,68 +163,7 @@ export default function App() {
             </div>
           </section>
 
-          <AnimatePresence>
-            {showSecondary && (
-              <motion.section 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-4 overflow-hidden"
-              >
-                <div className="flex items-center justify-between">
-                  <Label className="text-[10px] uppercase tracking-widest text-rose-500/70 font-bold">Caja Secundaria</Label>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowSecondary(false)}
-                    className="h-5 w-5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400"
-                    title="Remove Secondary Box"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="sL" className="text-[10px] text-slate-400">LENGTH</Label>
-                    <Input
-                      id="sL"
-                      type="number"
-                      value={secondaryItem.length}
-                      onChange={(e) => handleSecondaryItemChange('length', e.target.value)}
-                      className="bg-slate-950 border-slate-800 focus:border-rose-500 h-9 text-sm font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="sW" className="text-[10px] text-slate-400">WIDTH</Label>
-                    <Input
-                      id="sW"
-                      type="number"
-                      value={secondaryItem.width}
-                      onChange={(e) => handleSecondaryItemChange('width', e.target.value)}
-                      className="bg-slate-950 border-slate-800 focus:border-rose-500 h-9 text-sm font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="sH" className="text-[10px] text-slate-400">HEIGHT</Label>
-                    <Input
-                      id="sH"
-                      type="number"
-                      value={secondaryItem.height}
-                      onChange={(e) => handleSecondaryItemChange('height', e.target.value)}
-                      className="bg-slate-950 border-slate-800 focus:border-rose-500 h-9 text-sm font-mono"
-                    />
-                  </div>
-                </div>
-                <Button 
-                  size="sm"
-                  onClick={() => setShowResult(true)}
-                  className="w-full bg-rose-500 hover:bg-rose-400 text-slate-950 text-[10px] h-7 font-bold uppercase"
-                >
-                  Colocar en Waste
-                </Button>
-              </motion.section>
-            )}
-          </AnimatePresence>
+
 
           {/* Container Dimensions */}
           <section className="space-y-4">
@@ -367,7 +276,6 @@ export default function App() {
               <Visualizer 
                 item={{ length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }} 
                 container={{ length: parseFloat(container.length)||0, width: parseFloat(container.width)||0, height: parseFloat(container.height)||0 }} 
-                secondaryItem={{ length: parseFloat(secondaryItem.length)||0, width: parseFloat(secondaryItem.width)||0, height: parseFloat(secondaryItem.height)||0 }}
                 result={showResult ? result : { count: 0, items: [], orientation: { length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }, layout: [0,0,0], efficiency: 0, waste: 0 }} 
                 unit={containerUnit}
                 itemUnit={itemUnit}
@@ -416,18 +324,9 @@ export default function App() {
 
                       <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-4 py-2 flex items-center gap-4 shadow-xl">
                         <div className="space-y-0.5">
-                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Primary</p>
+                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Packed</p>
                           <p className="text-xl font-black text-sky-400 font-mono tracking-tighter leading-none">{result.count}</p>
                         </div>
-                        {result.secondaryCount !== undefined && result.secondaryCount > 0 && (
-                          <>
-                            <div className="w-px h-7 bg-slate-700" />
-                            <div className="space-y-0.5">
-                              <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Secondary</p>
-                              <p className="text-xl font-black text-rose-400 font-mono tracking-tighter leading-none">{result.secondaryCount}</p>
-                            </div>
-                          </>
-                        )}
                         <div className="w-px h-7 bg-slate-700" />
                         <div className="space-y-0.5">
                           <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Layout</p>
@@ -435,24 +334,13 @@ export default function App() {
                         </div>
                       </div>
 
-                      {result.count > 0 && !showSecondary && (
+                      {result.count > 0 && (
                         <div className="bg-slate-900/80 backdrop-blur-xl border border-sky-500/20 rounded-lg px-3 py-2 flex items-start gap-2 max-w-[260px] shadow-lg">
                           <Info className="w-3 h-3 text-sky-400 shrink-0 mt-0.5" />
                           <p className="text-[10px] text-sky-200/70 leading-relaxed italic">
                             {parseFloat(container.length) % result.orientation.length > 0 
                               ? `−${(parseFloat(container.length) % result.orientation.length).toFixed(1)}${containerUnit} → less waste`
                               : 'Optimal configuration.'}
-                          </p>
-                        </div>
-                      )}
-
-                      {showSecondary && result.secondaryCount !== undefined && (
-                        <div className="bg-slate-900/80 backdrop-blur-xl border border-rose-500/20 rounded-lg px-3 py-2 flex items-start gap-2 max-w-[260px] shadow-lg">
-                          <Info className="w-3 h-3 text-rose-400 shrink-0 mt-0.5" />
-                          <p className="text-[10px] text-rose-200/70 leading-relaxed italic">
-                            {result.secondaryCount > 0 
-                              ? `Fitted ${result.secondaryCount} secondary boxes in waste space.`
-                              : 'Secondary box too large for remaining waste space.'}
                           </p>
                         </div>
                       )}
