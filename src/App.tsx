@@ -442,6 +442,7 @@ export default function App() {
             </div>
           </section>
         </div>
+      </div>
       ) : (
         <div className="flex-1 overflow-auto bg-slate-950">
           <Calculator />
