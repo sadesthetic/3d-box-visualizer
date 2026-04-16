@@ -270,12 +270,7 @@ export default function App() {
         {/* Main Viewport + Mobile Metrics Container */}
         <div className="flex-1 flex flex-col overflow-y-auto md:overflow-hidden relative bg-slate-950">
           <main className="w-full h-[50vh] md:h-full relative shrink-0 overflow-hidden border-b md:border-b-0 border-slate-800">
-            <motion.div 
-              initial={{ x: 0 }}
-              animate={{ x: 0 }}
-              transition={{ type: "spring", damping: 20, stiffness: 100 }}
-              className="w-full h-full"
-            >
+            <motion.div className="w-full h-full">
               <Visualizer 
                 item={{ length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }} 
                 container={{ length: parseFloat(container.length)||0, width: parseFloat(container.width)||0, height: parseFloat(container.height)||0 }} 
