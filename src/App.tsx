@@ -9,7 +9,7 @@ import { Button } from './components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Separator } from './components/ui/separator';
 import { Badge } from './components/ui/badge';
-import { Box, Container, Info, Maximize2, RotateCcw, Lightbulb, TrendingUp } from 'lucide-react';
+import { Box, Container, Info, Maximize2, RotateCcw, Lightbulb, TrendingUp, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -146,7 +146,18 @@ export default function App() {
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Item Dimensions (Small)</Label>
-              <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400">PRIMARY</Badge>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400 h-5 px-1.5 flex items-center justify-center">PRIMARY</Badge>
+                {!showSecondary && (
+                  <button
+                    onClick={() => setShowSecondary(true)}
+                    className="inline-flex items-center rounded-full border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-colors focus:outline-none px-2 py-0.5 text-[9px] font-semibold uppercase"
+                    title="Add Secondary Box"
+                  >
+                    + SEC
+                  </button>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
@@ -180,16 +191,6 @@ export default function App() {
                 />
               </div>
             </div>
-            <div className="pt-1">
-               <Button 
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowSecondary(!showSecondary)}
-                className={`w-full text-[10px] h-7 font-bold uppercase tracking-wider ${showSecondary ? 'bg-rose-500 hover:bg-rose-400 text-slate-950' : 'bg-slate-800 text-slate-300'}`}
-              >
-                {showSecondary ? 'Eliminar Secundaria' : 'Añadir Secundaria'}
-              </Button>
-            </div>
           </section>
 
           <AnimatePresence>
@@ -201,8 +202,16 @@ export default function App() {
                 className="space-y-4 overflow-hidden"
               >
                 <div className="flex items-center justify-between">
-                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Caja Secundaria</Label>
-                  <Badge variant="outline" className="text-[9px] border-rose-500/30 text-rose-400">WASTE_FILL</Badge>
+                  <Label className="text-[10px] uppercase tracking-widest text-rose-500/70 font-bold">Caja Secundaria</Label>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSecondary(false)}
+                    className="h-5 w-5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400"
+                    title="Remove Secondary Box"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1.5">
