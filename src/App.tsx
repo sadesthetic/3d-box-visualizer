@@ -9,7 +9,7 @@ import { Button } from './components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Separator } from './components/ui/separator';
 import { Badge } from './components/ui/badge';
-import { Box, Container, Info, Maximize2, RotateCcw, Lightbulb } from 'lucide-react';
+import { Box, Container, Info, Maximize2, RotateCcw, Lightbulb, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
