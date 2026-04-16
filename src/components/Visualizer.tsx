@@ -23,6 +23,11 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
   const containerWireframeRef = useRef<THREE.Group | null>(null);
   const packedGroupRef = useRef<THREE.Group | null>(null);
   const highlightRef = useRef(highlightContainer);
+  
+  // Animation targets for fluidity
+  const targetItemScale = useRef(new THREE.Vector3(1, 1, 1));
+  const targetContainerScale = useRef(new THREE.Vector3(1, 1, 1));
+  const targetPackedScale = useRef(new THREE.Vector3(1, 1, 1));
 
   useEffect(() => {
     highlightRef.current = highlightContainer;
@@ -94,6 +99,25 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       controls.update();
 
       const time = clock.getElapsedTime();
+      
+      // Smooth transitions for fluidity
+      const lerpFactor = 0.15;
+      
+      if (mainBoxRef.current) {
+        mainBoxRef.current.scale.lerp(targetItemScale.current, lerpFactor);
+        // Also ensure Y position (bottom-aligned) matches scale
+        mainBoxRef.current.position.y = THREE.MathUtils.lerp(mainBoxRef.current.position.y, targetItemScale.current.y / 2, lerpFactor);
+      }
+      
+      if (containerWireframeRef.current) {
+        containerWireframeRef.current.scale.lerp(targetContainerScale.current, lerpFactor);
+        containerWireframeRef.current.position.y = THREE.MathUtils.lerp(containerWireframeRef.current.position.y, targetContainerScale.current.y / 2, lerpFactor);
+      }
+      
+      if (packedGroupRef.current) {
+        packedGroupRef.current.scale.lerp(targetPackedScale.current, lerpFactor);
+      }
+
       if (sceneRef.current) {
         const lines = sceneRef.current.getObjectByName("ContainerLines") as THREE.LineSegments;
         if (lines && lines.material instanceof THREE.LineBasicMaterial) {
@@ -152,84 +176,89 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
         });
     };
 
-    // Remove old elements
-    if (mainBoxRef.current) {
-      disposeNode(mainBoxRef.current);
-      scene.remove(mainBoxRef.current);
-      mainBoxRef.current = null;
-    }
-    if (containerWireframeRef.current) {
-      disposeNode(containerWireframeRef.current);
-      scene.remove(containerWireframeRef.current);
-      containerWireframeRef.current = null;
-    }
+    // Remove old elements only if structural change
+    const isShowingPacked = result && result.count > 0;
+    
+    // Logic to manage packed group (fully recreated on result change for simplicity/correctness)
     if (packedGroupRef.current) {
       disposeNode(packedGroupRef.current);
       scene.remove(packedGroupRef.current);
       packedGroupRef.current = null;
     }
 
+    // Logic to manage main box visibility and existence
+    if (isShowingPacked && mainBoxRef.current) {
+       disposeNode(mainBoxRef.current);
+       scene.remove(mainBoxRef.current);
+       mainBoxRef.current = null;
+    } else if (!isShowingPacked && containerWireframeRef.current) {
+       disposeNode(containerWireframeRef.current);
+       scene.remove(containerWireframeRef.current);
+       containerWireframeRef.current = null;
+    }
+
 
     if (!result || result.count === 0) {
       // Just show the main item box
       const { length: l, width: w, height: h } = item;
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
-      const material = new THREE.MeshPhongMaterial({ 
-          color: 0x38bdf8, 
-          shininess: 10,
-          transparent: true,
-          opacity: 0.9
-      });
+      const targetL = parseFloat(l.toString()) || 0.1;
+      const targetH = parseFloat(h.toString()) || 0.1;
+      const targetW = parseFloat(w.toString()) || 0.1;
       
-      const mainBox = new THREE.Mesh(geometry, material);
-      mainBox.castShadow = true;
-      mainBox.scale.set(l, h, w); // Three.js Y is height
-      mainBox.position.y = h / 2;
-      scene.add(mainBox);
+      targetItemScale.current.set(targetL, targetH, targetW);
       
-      const edges = new THREE.EdgesGeometry(geometry);
-      const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true }));
-      mainBox.add(line);
-
-      mainBoxRef.current = mainBox;
+      if (!mainBoxRef.current) {
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshPhongMaterial({ 
+            color: 0x38bdf8, 
+            transparent: true,
+            opacity: 0.9
+        });
+        
+        const mainBox = new THREE.Mesh(geometry, material);
+        // Initial state
+        mainBox.scale.copy(targetItemScale.current);
+        mainBox.position.y = targetItemScale.current.y / 2;
+        scene.add(mainBox);
+        
+        const edges = new THREE.EdgesGeometry(geometry);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true }));
+        mainBox.add(line);
+        mainBoxRef.current = mainBox;
+      }
     } else {
       // Show visualization of packing layout
       const { length: cL, width: cW, height: cH } = container;
-      const contGroup = new THREE.Group();
+      const targetCL = parseFloat(cL.toString()) || 1;
+      const targetCH = parseFloat(cH.toString()) || 1;
+      const targetCW = parseFloat(cW.toString()) || 1;
       
-      // Box geometry for the container
-      const contGeo = new THREE.BoxGeometry(cL, cH, cW);
-      
-      // Translucent container faces
-      const contMat = new THREE.MeshPhongMaterial({ 
-          color: 0xffffff, 
-          transparent: true, 
-          opacity: 0.1,
-          side: THREE.BackSide,
-          depthWrite: false
-      });
-      const contMesh = new THREE.Mesh(contGeo, contMat);
-      contGroup.add(contMesh);
+      targetContainerScale.current.set(targetCL, targetCH, targetCW);
+      targetPackedScale.current.set(1, 1, 1);
 
-      // Thicker and brighter edges for container to understand context better
-      const contEdges = new THREE.EdgesGeometry(contGeo);
-      
-      const contLines = new THREE.LineSegments(
-          contEdges, 
-          new THREE.LineBasicMaterial({ 
-              color: 0xffffff, 
-              opacity: 0.9, 
-              transparent: true, 
-              depthWrite: false 
-          })
-      );
-      // Let's name the component to easily find it later
-      contLines.name = "ContainerLines";
-      contGroup.add(contLines);
+      if (!containerWireframeRef.current) {
+        const contGroup = new THREE.Group();
+        const contGeo = new THREE.BoxGeometry(1, 1, 1);
+        const contMat = new THREE.MeshPhongMaterial({ 
+            color: 0xffffff, 
+            transparent: true, 
+            opacity: 0.1,
+            side: THREE.BackSide,
+            depthWrite: false
+        });
+        const contMesh = new THREE.Mesh(contGeo, contMat);
+        contGroup.add(contMesh);
 
-      contGroup.position.y = cH / 2;
-      scene.add(contGroup);
-      containerWireframeRef.current = contGroup;
+        const contEdges = new THREE.EdgesGeometry(contGeo);
+        const contLines = new THREE.LineSegments(contEdges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.9, transparent: true, depthWrite: false }));
+        contLines.name = "ContainerLines";
+        contGroup.add(contLines);
+        
+        contGroup.scale.copy(targetContainerScale.current);
+        contGroup.position.y = targetContainerScale.current.y / 2;
+        scene.add(contGroup);
+        containerWireframeRef.current = contGroup;
+      }
 
       const packedGroup = new THREE.Group();
       const displayLimit = Math.min(result.count, 2000); // Increased display limit for smaller items
@@ -268,6 +297,10 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
           created++;
       }
 
+      // Start from 0 scale for a "entry" animation
+      packedGroup.scale.set(0.8, 0.8, 0.8);
+      targetPackedScale.current.set(1, 1, 1);
+      
       scene.add(packedGroup);
       packedGroupRef.current = packedGroup;
     }
