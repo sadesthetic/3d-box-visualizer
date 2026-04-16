@@ -269,18 +269,24 @@ export default function App() {
       </aside>
 
       {/* Main Viewport - Top half on mobile */}
-      <main className="w-full h-[45vh] md:h-auto md:flex-1 relative shrink-0">
-        <Visualizer 
-          item={{ length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }} 
-          container={{ length: parseFloat(container.length)||0, width: parseFloat(container.width)||0, height: parseFloat(container.height)||0 }} 
-          result={showResult ? result : { count: 0, items: [], orientation: { length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }, layout: [0,0,0], efficiency: 0, waste: 0 }} 
-          unit={containerUnit}
-          itemUnit={itemUnit}
-          highlightContainer={highlightContainer}
-        />
+      <main className="w-full h-[45vh] md:h-auto md:flex-1 relative shrink-0 overflow-hidden">
+        <motion.div 
+          animate={{ x: showResult ? -80 : 0 }}
+          transition={{ type: "spring", damping: 20, stiffness: 100 }}
+          className="w-full h-full"
+        >
+          <Visualizer 
+            item={{ length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }} 
+            container={{ length: parseFloat(container.length)||0, width: parseFloat(container.width)||0, height: parseFloat(container.height)||0 }} 
+            result={showResult ? result : { count: 0, items: [], orientation: { length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }, layout: [0,0,0], efficiency: 0, waste: 0 }} 
+            unit={containerUnit}
+            itemUnit={itemUnit}
+            highlightContainer={highlightContainer}
+          />
+        </motion.div>
 
         {/* HUD Overlays (Metrics overlay) - Visible across mobile and desktop */}
-        <div className="flex absolute top-4 right-4 md:top-6 md:right-32 flex-col gap-2 items-end pointer-events-none z-20 origin-top-right scale-[0.80] md:scale-100">
+        <div className="flex absolute top-4 right-4 md:top-6 md:right-6 flex-col gap-2 items-end pointer-events-none z-20 origin-top-right scale-[0.80] md:scale-100">
           <AnimatePresence>
             {showResult && (
               <motion.div
