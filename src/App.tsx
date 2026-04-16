@@ -186,6 +186,17 @@ export default function App() {
                 >
                   CUBE
                 </button>
+                <button
+                  onClick={() => setHighlightContainer(!highlightContainer)}
+                  className={`inline-flex items-center justify-center rounded-full border w-6 h-6 transition-colors focus:outline-none ${
+                    highlightContainer
+                      ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_8px_rgba(16,185,129,0.25)]'
+                      : 'border-slate-800 text-slate-500 hover:text-slate-400 bg-transparent'
+                  }`}
+                  title="Highlight container"
+                >
+                  <Lightbulb className="w-3 h-3" />
+                </button>
                 <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400">INPUT_B</Badge>
               </div>
             </div>
@@ -269,76 +280,65 @@ export default function App() {
         />
 
         {/* HUD Overlays (Metrics overlay) - Visible across mobile and desktop */}
-        <div className="flex absolute top-4 right-4 md:top-6 md:right-6 flex-col gap-3 items-end pointer-events-none z-20 origin-top-right scale-[0.80] md:scale-100">
+        <div className="flex absolute top-4 right-4 md:top-6 md:right-6 flex-col gap-2 items-end pointer-events-none z-20 origin-top-right scale-[0.80] md:scale-100">
           <AnimatePresence>
             {showResult && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                className="w-80 pointer-events-auto"
+                className="flex flex-col gap-2 items-end pointer-events-auto"
               >
-                <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-5 space-y-5">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Efficiency Metrics</Label>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
-                      <span className="text-[9px] font-mono text-slate-400">LIVE_FEED</span>
-                    </div>
-                  </div>
+                {/* Header label */}
+                <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
+                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Efficiency Metrics</span>
+                </div>
 
-                  <div className="flex justify-between items-end">
-                    <div className="space-y-1">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold">Units Packed</p>
-                      <p className="text-3xl font-black text-sky-400 font-mono tracking-tighter">{result.count}</p>
-                    </div>
-                    <div className="text-right space-y-1">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold">Arrangement</p>
-                      <p className="text-sm font-mono text-slate-300">{result.layout[0]} × {result.layout[1]} × {result.layout[2]}</p>
-                    </div>
+                {/* Tip - at the top */}
+                {result.count > 0 && (
+                  <div className="bg-slate-900/80 backdrop-blur-xl border border-sky-500/20 rounded-lg px-3 py-2 flex items-start gap-2 max-w-[220px]">
+                    <Info className="w-3 h-3 text-sky-400 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-sky-200/70 leading-relaxed italic">
+                      {parseFloat(container.length) % result.orientation.length > 0 
+                        ? `−${(parseFloat(container.length) % result.orientation.length).toFixed(1)}${containerUnit} → less waste`
+                        : 'Optimal configuration.'}
+                    </p>
                   </div>
+                )}
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-[10px] font-bold uppercase">
-                      <span className="text-slate-500">Volume Efficiency</span>
-                      <span className="text-sky-400">{result.efficiency.toFixed(1)}%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${result.efficiency}%` }}
-                        className={`h-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                      />
-                    </div>
+                {/* Units Packed + Arrangement */}
+                <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-4 py-3 flex items-center gap-6">
+                  <div className="space-y-0.5">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Packed</p>
+                    <p className="text-2xl font-black text-sky-400 font-mono tracking-tighter leading-none">{result.count}</p>
                   </div>
-
-                  <div className="flex justify-between items-center text-[10px] font-mono">
-                    <span className="text-slate-500 uppercase">Wasted Space</span>
-                    <span className="text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
+                  <div className="w-px h-8 bg-slate-700" />
+                  <div className="space-y-0.5">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Layout</p>
+                    <p className="text-xs font-mono text-slate-300 leading-none">{result.layout[0]}×{result.layout[1]}×{result.layout[2]}</p>
                   </div>
+                </div>
 
-                  <div className="pt-2">
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       onClick={() => setHighlightContainer(!highlightContainer)}
-                       className={`w-full text-xs font-mono border-slate-700 transition-colors duration-300 ${highlightContainer ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'hover:bg-slate-800 text-slate-400'}`}
-                     >
-                       <Lightbulb className={`w-3 h-3 mr-2 ${highlightContainer ? 'text-emerald-400' : ''}`} />
-                       {highlightContainer ? 'CONTAINER HIGHLIGHTED' : 'HIGHLIGHT CONTAINER'}
-                     </Button>
+                {/* Volume Efficiency bar */}
+                <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-2.5 w-48 space-y-1.5">
+                  <div className="flex justify-between text-[9px] font-bold uppercase">
+                    <span className="text-slate-500">Vol. Efficiency</span>
+                    <span className="text-sky-400">{result.efficiency.toFixed(1)}%</span>
                   </div>
+                  <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${result.efficiency}%` }}
+                      className={`h-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                    />
+                  </div>
+                </div>
 
-                  {result.count > 0 && (
-                    <div className="p-3 bg-sky-500/5 border border-sky-500/20 rounded-md flex gap-3">
-                      <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-sky-200/80 leading-relaxed italic">
-                        {parseFloat(container.length) % result.orientation.length > 0 
-                          ? `Tip: Reduce length by ${(parseFloat(container.length) % result.orientation.length).toFixed(1)}${containerUnit} to minimize waste.`
-                          : "Optimal configuration found for the given orientation."}
-                      </p>
-                    </div>
-                  )}
+                {/* Wasted Space */}
+                <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 flex items-center gap-3">
+                  <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Waste</span>
+                  <span className="text-[11px] font-mono text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
                 </div>
               </motion.div>
             )}
