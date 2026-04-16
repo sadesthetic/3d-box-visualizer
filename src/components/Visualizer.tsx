@@ -6,6 +6,7 @@ import type { Dimensions, PackingResult } from '../lib/packing';
 interface VisualizerProps {
   item: Dimensions;
   container: Dimensions;
+  secondaryItem?: Dimensions;
   result: PackingResult;
   unit: 'in' | 'cm';
   itemUnit: 'in' | 'cm';
@@ -416,6 +417,39 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
 
           packedGroup.add(m);
           created++;
+      }
+
+      // Add Secondary Items if they exist
+      if (result.secondaryItems) {
+        for (const sItem of result.secondaryItems) {
+          if (created >= displayLimit) break;
+
+          const itemGeo = new THREE.BoxGeometry(sItem.dx, sItem.dz, sItem.dy);
+          const itemMat = new THREE.MeshPhongMaterial({ 
+              color: 0x991b1b, // Dark Red (Tailwind red-800 equivalent)
+              transparent: true, 
+              opacity: 0, 
+              polygonOffset: true,
+              polygonOffsetFactor: 4,
+              polygonOffsetUnits: 4,
+              depthWrite: true
+          });
+          const m = new THREE.Mesh(itemGeo, itemMat);
+          m.userData = { isPackedItem: true };
+          
+          m.position.set(
+              (-cL / 2) + sItem.x + (sItem.dx / 2),
+              sItem.z + (sItem.dz / 2),
+              (-cW / 2) + sItem.y + (sItem.dy / 2)
+          );
+
+          const e = new THREE.EdgesGeometry(itemGeo);
+          const l = new THREE.LineSegments(e, new THREE.LineBasicMaterial({color: 0xffffff, opacity: 0.2, transparent: true}));
+          m.add(l);
+
+          packedGroup.add(m);
+          created++;
+        }
       }
 
       // Start from slight offset and zero opacity for a "entry" animation
