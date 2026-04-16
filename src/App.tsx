@@ -284,9 +284,10 @@ export default function App() {
           <AnimatePresence>
             {showResult && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                initial={{ opacity: 0, scale: 0.95, y: -10, x: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10, x: 20 }}
+                transition={{ type: "spring", damping: 20, stiffness: 100 }}
                 className="flex flex-col gap-2 items-end pointer-events-auto"
               >
                 {/* Header label */}
