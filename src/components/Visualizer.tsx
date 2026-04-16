@@ -46,10 +46,16 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
     cameraRef.current = camera;
 
     // RENDERERS
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    mountRef.current.appendChild(renderer.domElement);
+    
+    // Clear mount point to prevent double-canvas in StrictMode
+    if (mountRef.current) {
+      mountRef.current.innerHTML = '';
+      mountRef.current.appendChild(renderer.domElement);
+    }
     rendererRef.current = renderer;
 
     // LIGHTING
@@ -107,7 +113,9 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
         }
       }
 
-      renderer.render(scene, camera);
+      if (rendererRef.current && sceneRef.current && cameraRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
     };
     animate();
 
