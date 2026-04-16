@@ -89,8 +89,8 @@ export default function App() {
       {activeTab === 'visualizer' ? (
         <div className="flex-1 flex flex-col-reverse md:flex-row overflow-hidden relative">
           {/* Sidebar - Acts as a bottom sheet on mobile */}
-          <aside className="w-full h-[55vh] md:h-full md:w-96 border-t md:border-t-0 md:border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl flex flex-col z-10 shadow-2xl overflow-y-auto shrink-0 md:shrink">
-            <div className="p-6 border-b border-slate-800 shrink-0">
+          <aside className="w-full md:h-full md:w-96 border-t md:border-t-0 md:border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl flex flex-col z-10 shadow-2xl shrink-0 md:shrink overflow-hidden">
+            <div className="p-6 border-b border-slate-800 shrink-0 sticky top-0 bg-slate-900/90 backdrop-blur-xl z-10">
               <div className="flex items-center gap-2 mb-1">
                 <Box className="w-6 h-6 text-sky-400" />
                 <h1 className="text-xl font-bold tracking-tight uppercase italic">Packing Optimizer</h1>
@@ -98,7 +98,7 @@ export default function App() {
               <p className="text-xs text-slate-400 font-mono">v1.0.4 // 6-DOF KINETIC ENGINE</p>
             </div>
 
-        <div className="flex-1 space-y-6 p-6">
+        <div className="flex-1 space-y-6 p-6 overflow-y-auto">
           {/* Unit Toggle */}
           <section className="grid grid-cols-2 gap-4">
             <div className="space-y-3">
@@ -269,7 +269,7 @@ export default function App() {
 
         {/* Main Viewport + Mobile Metrics Container */}
         <div className="flex-1 flex flex-col overflow-y-auto md:overflow-hidden relative bg-slate-950">
-          <main className="w-full h-[50vh] md:h-full relative shrink-0 overflow-hidden border-b md:border-b-0 border-slate-800">
+          <main className="w-full h-[60vw] md:h-full relative shrink-0 overflow-hidden border-b md:border-b-0 border-slate-800">
             <motion.div className="w-full h-full">
               <Visualizer 
                 item={{ length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }} 
@@ -281,70 +281,73 @@ export default function App() {
               />
             </motion.div>
 
-            {/* Desktop HUD Overlay - Hidden on mobile */}
-            <div className="hidden md:flex absolute top-6 right-6 flex-col gap-2 items-end pointer-events-none z-20 origin-top-right">
+            {/* Desktop Efficiency Metrics - Bottom of viewport, two rows, hidden on mobile */}
+            <div className="hidden md:block absolute bottom-6 left-0 right-0 pointer-events-none z-20 px-6">
               <AnimatePresence>
                 {showResult && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -10, x: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10, x: 20 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
                     transition={{ type: "spring", damping: 20, stiffness: 100 }}
-                    className="flex flex-col gap-2 items-end pointer-events-auto"
+                    className="flex flex-col gap-2 items-start pointer-events-auto"
                   >
-                    <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 shadow-xl">
-                      <div className={`w-1.5 h-1.5 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
-                      <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Efficiency Metrics</span>
-                    </div>
-
-                    {result.count > 0 && (
-                      <div className="bg-slate-900/80 backdrop-blur-xl border border-sky-500/20 rounded-lg px-3 py-2 flex items-start gap-2 max-w-[220px] shadow-lg">
-                        <Info className="w-3 h-3 text-sky-400 shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-sky-200/70 leading-relaxed italic">
-                          {parseFloat(container.length) % result.orientation.length > 0 
-                            ? `−${(parseFloat(container.length) % result.orientation.length).toFixed(1)}${containerUnit} → less waste`
-                            : 'Optimal configuration.'}
-                        </p>
+                    {/* Row 1: label + packed count + layout + waste */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 shadow-xl">
+                        <div className={`w-1.5 h-1.5 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
+                        <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Efficiency Metrics</span>
                       </div>
-                    )}
-
-                    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-4 py-3 flex items-center gap-6 shadow-xl">
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Packed</p>
-                        <p className="text-2xl font-black text-sky-400 font-mono tracking-tighter leading-none">{result.count}</p>
-                      </div>
-                      <div className="w-px h-8 bg-slate-700" />
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Layout</p>
-                        <p className="text-xs font-mono text-slate-300 leading-none">{result.layout[0]}×{result.layout[1]}×{result.layout[2]}</p>
+                      <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-4 py-2 flex items-center gap-4 shadow-xl">
+                        <div className="space-y-0.5">
+                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Packed</p>
+                          <p className="text-xl font-black text-sky-400 font-mono tracking-tighter leading-none">{result.count}</p>
+                        </div>
+                        <div className="w-px h-7 bg-slate-700" />
+                        <div className="space-y-0.5">
+                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Layout</p>
+                          <p className="text-xs font-mono text-slate-300 leading-none">{result.layout[0]}×{result.layout[1]}×{result.layout[2]}</p>
+                        </div>
+                        <div className="w-px h-7 bg-slate-700" />
+                        <div className="space-y-0.5">
+                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Waste</p>
+                          <p className="text-xs font-mono text-rose-400 leading-none">{result.waste.toFixed(1)} {containerUnit}³</p>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-2.5 w-48 space-y-1.5 shadow-xl">
-                      <div className="flex justify-between text-[9px] font-bold uppercase">
-                        <span className="text-slate-500">Vol. Efficiency</span>
-                        <span className="text-sky-400">{result.efficiency.toFixed(1)}%</span>
+                    {/* Row 2: efficiency bar + tip */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-2 w-52 space-y-1.5 shadow-xl">
+                        <div className="flex justify-between text-[9px] font-bold uppercase">
+                          <span className="text-slate-500">Vol. Efficiency</span>
+                          <span className="text-sky-400">{result.efficiency.toFixed(1)}%</span>
+                        </div>
+                        <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${result.efficiency}%` }}
+                            className={`h-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                          />
+                        </div>
                       </div>
-                      <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${result.efficiency}%` }}
-                          className={`h-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 flex items-center gap-3 shadow-xl">
-                      <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Waste</span>
-                      <span className="text-[11px] font-mono text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
+                      {result.count > 0 && (
+                        <div className="bg-slate-900/80 backdrop-blur-xl border border-sky-500/20 rounded-lg px-3 py-2 flex items-start gap-2 max-w-[260px] shadow-lg">
+                          <Info className="w-3 h-3 text-sky-400 shrink-0 mt-0.5" />
+                          <p className="text-[10px] text-sky-200/70 leading-relaxed italic">
+                            {parseFloat(container.length) % result.orientation.length > 0 
+                              ? `−${(parseFloat(container.length) % result.orientation.length).toFixed(1)}${containerUnit} → less waste`
+                              : 'Optimal configuration.'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Bottom Status Bar - Desktop only in this absolute context */}
-            <div className="hidden md:flex absolute bottom-6 left-6 right-6 justify-between items-center pointer-events-none z-20">
+            {/* Bottom Status Bar - Desktop only, top-right corner */}
+            <div className="hidden md:flex absolute top-4 right-4 pointer-events-none z-20">
               <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Maximize2 className="w-3 h-3 text-sky-400" />
