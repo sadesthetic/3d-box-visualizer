@@ -268,89 +268,179 @@ export default function App() {
         </div>
       </aside>
 
-      {/* Main Viewport - Top half on mobile */}
-      <main className="w-full h-[45vh] md:h-auto md:flex-1 relative shrink-0 overflow-hidden">
-        <motion.div 
-          initial={{ x: 0 }}
-          animate={{ x: 0 }}
-          transition={{ type: "spring", damping: 20, stiffness: 100 }}
-          className="w-full h-full"
-        >
-          <Visualizer 
-            item={{ length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }} 
-            container={{ length: parseFloat(container.length)||0, width: parseFloat(container.width)||0, height: parseFloat(container.height)||0 }} 
-            result={showResult ? result : { count: 0, items: [], orientation: { length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }, layout: [0,0,0], efficiency: 0, waste: 0 }} 
-            unit={containerUnit}
-            itemUnit={itemUnit}
-            highlightContainer={highlightContainer}
-          />
-        </motion.div>
+        {/* Main Viewport + Mobile Metrics Container */}
+        <div className="flex-1 flex flex-col overflow-y-auto md:overflow-hidden relative bg-slate-950">
+          <main className="w-full h-[50vh] md:h-full relative shrink-0 overflow-hidden border-b md:border-b-0 border-slate-800">
+            <motion.div 
+              initial={{ x: 0 }}
+              animate={{ x: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 100 }}
+              className="w-full h-full"
+            >
+              <Visualizer 
+                item={{ length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }} 
+                container={{ length: parseFloat(container.length)||0, width: parseFloat(container.width)||0, height: parseFloat(container.height)||0 }} 
+                result={showResult ? result : { count: 0, items: [], orientation: { length: parseFloat(item.length)||0, width: parseFloat(item.width)||0, height: parseFloat(item.height)||0 }, layout: [0,0,0], efficiency: 0, waste: 0 }} 
+                unit={containerUnit}
+                itemUnit={itemUnit}
+                highlightContainer={highlightContainer}
+              />
+            </motion.div>
 
-        {/* HUD Overlays (Metrics overlay) - Visible across mobile and desktop */}
-        <div className="flex absolute top-4 right-4 md:top-6 md:right-6 flex-col gap-2 items-end pointer-events-none z-20 origin-top-right scale-[0.80] md:scale-100">
-          <AnimatePresence>
-            {showResult && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -10, x: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10, x: 20 }}
-                transition={{ type: "spring", damping: 20, stiffness: 100 }}
-                className="flex flex-col gap-2 items-end pointer-events-auto"
-              >
-                {/* Header label */}
-                <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5">
-                  <div className={`w-1.5 h-1.5 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
-                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Efficiency Metrics</span>
-                </div>
+            {/* Desktop HUD Overlay - Hidden on mobile */}
+            <div className="hidden md:flex absolute top-6 right-6 flex-col gap-2 items-end pointer-events-none z-20 origin-top-right">
+              <AnimatePresence>
+                {showResult && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -10, x: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10, x: 20 }}
+                    transition={{ type: "spring", damping: 20, stiffness: 100 }}
+                    className="flex flex-col gap-2 items-end pointer-events-auto"
+                  >
+                    <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 shadow-xl">
+                      <div className={`w-1.5 h-1.5 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
+                      <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Efficiency Metrics</span>
+                    </div>
 
-                {/* Tip - at the top */}
-                {result.count > 0 && (
-                  <div className="bg-slate-900/80 backdrop-blur-xl border border-sky-500/20 rounded-lg px-3 py-2 flex items-start gap-2 max-w-[220px]">
-                    <Info className="w-3 h-3 text-sky-400 shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-sky-200/70 leading-relaxed italic">
-                      {parseFloat(container.length) % result.orientation.length > 0 
-                        ? `−${(parseFloat(container.length) % result.orientation.length).toFixed(1)}${containerUnit} → less waste`
-                        : 'Optimal configuration.'}
-                    </p>
-                  </div>
+                    {result.count > 0 && (
+                      <div className="bg-slate-900/80 backdrop-blur-xl border border-sky-500/20 rounded-lg px-3 py-2 flex items-start gap-2 max-w-[220px] shadow-lg">
+                        <Info className="w-3 h-3 text-sky-400 shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-sky-200/70 leading-relaxed italic">
+                          {parseFloat(container.length) % result.orientation.length > 0 
+                            ? `−${(parseFloat(container.length) % result.orientation.length).toFixed(1)}${containerUnit} → less waste`
+                            : 'Optimal configuration.'}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-4 py-3 flex items-center gap-6 shadow-xl">
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Packed</p>
+                        <p className="text-2xl font-black text-sky-400 font-mono tracking-tighter leading-none">{result.count}</p>
+                      </div>
+                      <div className="w-px h-8 bg-slate-700" />
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Layout</p>
+                        <p className="text-xs font-mono text-slate-300 leading-none">{result.layout[0]}×{result.layout[1]}×{result.layout[2]}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-2.5 w-48 space-y-1.5 shadow-xl">
+                      <div className="flex justify-between text-[9px] font-bold uppercase">
+                        <span className="text-slate-500">Vol. Efficiency</span>
+                        <span className="text-sky-400">{result.efficiency.toFixed(1)}%</span>
+                      </div>
+                      <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${result.efficiency}%` }}
+                          className={`h-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 flex items-center gap-3 shadow-xl">
+                      <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Waste</span>
+                      <span className="text-[11px] font-mono text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
+                    </div>
+                  </motion.div>
                 )}
+              </AnimatePresence>
+            </div>
 
-                {/* Units Packed + Arrangement */}
-                <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-4 py-3 flex items-center gap-6">
-                  <div className="space-y-0.5">
-                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Packed</p>
-                    <p className="text-2xl font-black text-sky-400 font-mono tracking-tighter leading-none">{result.count}</p>
-                  </div>
-                  <div className="w-px h-8 bg-slate-700" />
-                  <div className="space-y-0.5">
-                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Layout</p>
-                    <p className="text-xs font-mono text-slate-300 leading-none">{result.layout[0]}×{result.layout[1]}×{result.layout[2]}</p>
-                  </div>
+            {/* Bottom Status Bar - Desktop only in this absolute context */}
+            <div className="hidden md:flex absolute bottom-6 left-6 right-6 justify-between items-center pointer-events-none z-20">
+              <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Maximize2 className="w-3 h-3 text-sky-400" />
+                  <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">RENDER_60FPS</span>
                 </div>
+                <Separator orientation="vertical" className="h-3 bg-slate-700" />
+                <div className="flex items-center gap-2">
+                  <Container className="w-3 h-3 text-sky-400" />
+                  <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">THREE_JS_R128</span>
+                </div>
+                <Separator orientation="vertical" className="h-3 bg-slate-700" />
+                <div className="flex items-center gap-2">
+                  <Box className="w-3 h-3 text-emerald-400" />
+                  <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-tighter">Item Vol: {itemVolFt3.toFixed(4)} FT³</span>
+                </div>
+              </div>
+            </div>
+          </main>
 
-                {/* Volume Efficiency bar */}
-                <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-2.5 w-48 space-y-1.5">
-                  <div className="flex justify-between text-[9px] font-bold uppercase">
-                    <span className="text-slate-500">Vol. Efficiency</span>
-                    <span className="text-sky-400">{result.efficiency.toFixed(1)}%</span>
+          {/* Mobile Metrics & Status Section */}
+          <section className="md:hidden w-full flex flex-col bg-slate-950 p-4 space-y-4 pb-12">
+            <AnimatePresence>
+              {showResult ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
+                      <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Optimization Report</h2>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] border-sky-500/20 text-sky-400 font-mono">LIVE_DATA</Badge>
                   </div>
-                  <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${result.efficiency}%` }}
-                      className={`h-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                    />
-                  </div>
-                </div>
 
-                {/* Wasted Space */}
-                <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 flex items-center gap-3">
-                  <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Waste</span>
-                  <span className="text-[11px] font-mono text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Packed Units</p>
+                      <p className="text-3xl font-black text-sky-400 font-mono leading-none">{result.count}</p>
+                    </div>
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Arrangement</p>
+                      <p className="text-lg font-mono text-slate-300 leading-none">{result.layout[0]}×{result.layout[1]}×{result.layout[2]}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                      <span className="text-slate-500">Volume Efficiency</span>
+                      <span className="text-sky-400">{result.efficiency.toFixed(1)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                        style={{ width: `${result.efficiency}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center pt-1">
+                      <span className="text-[9px] text-slate-500 uppercase font-bold">Wasted Area</span>
+                      <span className="text-xs font-mono text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
+                    </div>
+                  </div>
+
+                  {result.count > 0 && (
+                    <div className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4 flex gap-3 items-start">
+                      <Info className="w-4 h-4 text-sky-400 shrink-0" />
+                      <p className="text-[11px] text-sky-200/80 leading-relaxed italic">
+                        {parseFloat(container.length) % result.orientation.length > 0 
+                          ? `Optimization Tip: Adjusting the container length by −${(parseFloat(container.length) % result.orientation.length).toFixed(1)}${containerUnit} would significantly minimize unused volume.`
+                          : 'This is the most efficient configuration for the selected parameters.'}
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              ) : (
+                <div className="py-8 text-center text-slate-700 border border-dashed border-slate-800 rounded-2xl">
+                   <p className="text-[10px] uppercase tracking-[0.3em] font-mono">Status: Awaiting Metrics</p>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              )}
+            </AnimatePresence>
+
+            <div className="pt-4 border-t border-slate-900 flex justify-between items-center opacity-40">
+               <div className="flex items-center gap-2">
+                 <Container size={12} className="text-slate-500" />
+                 <span className="text-[9px] font-mono uppercase">System: Kinetic_v1.0.4</span>
+               </div>
+               <span className="text-[9px] font-mono uppercase">Item Vol: {itemVolFt3.toFixed(4)} FT³</span>
+            </div>
+          </section>
         </div>
 
         {/* Bottom Status Bar - Visible on both mobile and desktop */}
