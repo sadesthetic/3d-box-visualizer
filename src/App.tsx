@@ -442,28 +442,6 @@ export default function App() {
             </div>
           </section>
         </div>
-
-        {/* Bottom Status Bar - Visible on both mobile and desktop */}
-        <div className="flex absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 justify-between items-center pointer-events-none z-20 origin-bottom-left scale-[0.7] md:scale-100">
-          <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Maximize2 className="w-3 h-3 text-sky-400" />
-              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Viewport: 1920x1080_RENDER_60FPS</span>
-            </div>
-            <Separator orientation="vertical" className="h-3 bg-slate-700" />
-            <div className="flex items-center gap-2">
-              <Container className="w-3 h-3 text-sky-400" />
-              <span className="text-[10px] font-mono text-slate-300 uppercase tracking-tighter">Engine: THREE_JS_R128</span>
-            </div>
-            <Separator orientation="vertical" className="h-3 bg-slate-700" />
-            <div className="flex items-center gap-2">
-              <Box className="w-3 h-3 text-emerald-400" />
-              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-tighter">Item Vol: {itemVolFt3.toFixed(4)} FT³</span>
-            </div>
-          </div>
-        </div>
-      </main>
-        </div>
       ) : (
         <div className="flex-1 overflow-auto bg-slate-950">
           <Calculator />
