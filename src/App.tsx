@@ -58,7 +58,6 @@ export default function App() {
   const handleItemChange = (key: keyof Dimensions, value: string) => {
     if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
       setItem((prev) => ({ ...prev, [key]: value }));
-      setShowResult(false);
     }
   };
 
@@ -70,7 +69,6 @@ export default function App() {
         }
         return { ...prev, [key]: value };
       });
-      setShowResult(false);
     }
   };
 
@@ -292,30 +290,19 @@ export default function App() {
                     transition={{ type: "spring", damping: 20, stiffness: 100 }}
                     className="flex flex-col gap-2 items-start pointer-events-auto"
                   >
-                    {/* Row 1: label + packed count + layout + waste */}
-                    <div className="flex items-center gap-3 flex-wrap">
+                    {/* Row 1: label + waste */}
+                    <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 shadow-xl">
                         <div className={`w-1.5 h-1.5 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
                         <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Efficiency Metrics</span>
                       </div>
-                      <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-4 py-2 flex items-center gap-4 shadow-xl">
-                        <div className="space-y-0.5">
-                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Packed</p>
-                          <p className="text-xl font-black text-sky-400 font-mono tracking-tighter leading-none">{result.count}</p>
-                        </div>
-                        <div className="w-px h-7 bg-slate-700" />
-                        <div className="space-y-0.5">
-                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Layout</p>
-                          <p className="text-xs font-mono text-slate-300 leading-none">{result.layout[0]}×{result.layout[1]}×{result.layout[2]}</p>
-                        </div>
-                        <div className="w-px h-7 bg-slate-700" />
-                        <div className="space-y-0.5">
-                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Waste</p>
-                          <p className="text-xs font-mono text-rose-400 leading-none">{result.waste.toFixed(1)} {containerUnit}³</p>
-                        </div>
+                      <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 flex items-center gap-3 shadow-xl">
+                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Waste</span>
+                        <span className="text-[11px] font-mono text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
                       </div>
                     </div>
-                    {/* Row 2: efficiency bar + tip */}
+                    
+                    {/* Row 2: efficiency bar + packed + layout + tip */}
                     <div className="flex items-center gap-3 flex-wrap">
                       <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-2 w-52 space-y-1.5 shadow-xl">
                         <div className="flex justify-between text-[9px] font-bold uppercase">
@@ -330,6 +317,19 @@ export default function App() {
                           />
                         </div>
                       </div>
+
+                      <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-4 py-2 flex items-center gap-4 shadow-xl">
+                        <div className="space-y-0.5">
+                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Packed</p>
+                          <p className="text-xl font-black text-sky-400 font-mono tracking-tighter leading-none">{result.count}</p>
+                        </div>
+                        <div className="w-px h-7 bg-slate-700" />
+                        <div className="space-y-0.5">
+                          <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Layout</p>
+                          <p className="text-xs font-mono text-slate-300 leading-none">{result.layout[0]}×{result.layout[1]}×{result.layout[2]}</p>
+                        </div>
+                      </div>
+
                       {result.count > 0 && (
                         <div className="bg-slate-900/80 backdrop-blur-xl border border-sky-500/20 rounded-lg px-3 py-2 flex items-start gap-2 max-w-[260px] shadow-lg">
                           <Info className="w-3 h-3 text-sky-400 shrink-0 mt-0.5" />
@@ -346,8 +346,8 @@ export default function App() {
               </AnimatePresence>
             </div>
 
-            {/* Bottom Status Bar - Desktop only, top-right corner */}
-            <div className="hidden md:flex absolute top-4 right-4 pointer-events-none z-20">
+            {/* Top Status Bar - Desktop only, top-left corner */}
+            <div className="hidden md:flex absolute top-4 left-4 pointer-events-none z-20">
               <div className="bg-slate-900/80 backdrop-blur border border-slate-800 px-4 py-2 rounded-full shadow-xl pointer-events-auto flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Maximize2 className="w-3 h-3 text-sky-400" />
