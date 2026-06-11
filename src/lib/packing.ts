@@ -143,40 +143,35 @@ export function calculateBestPacking(
       totalPalletH2 = cargoH2 + palletWoodHeight;
     }
 
-    // Convert item constraints to pallet constraints
-    let maxPallets1 = Infinity;
-    let maxPallets2 = 0;
+    // Convert item constraints to box limits, then to pallet limits
+    let boxesLimit1 = Infinity;
+    let boxesLimit2 = hasSecondaryItem ? Infinity : 0;
 
     const limitMode = options?.limitMode || 'volume';
 
     if (limitMode === 'quantity') {
       if (options?.maxCount1 && options.maxCount1 > 0) {
-        maxPallets1 = k1 > 0 ? Math.ceil(options.maxCount1 / k1) : 0;
+        boxesLimit1 = options.maxCount1;
       }
       if (hasSecondaryItem && options?.maxCount2 && options.maxCount2 > 0) {
-        maxPallets2 = k2 > 0 ? Math.ceil(options.maxCount2 / k2) : 0;
-      } else if (hasSecondaryItem) {
-        maxPallets2 = Infinity;
+        boxesLimit2 = options.maxCount2;
       }
     } else {
       const volUnit = options?.volumeUnit || 'cm3';
       if (options?.maxVolume1 && options.maxVolume1 > 0) {
         const maxVol1Container = convertVolumeToContainerUnit(options.maxVolume1, volUnit, containerUnit);
         const item1Vol = iL1 * iW1 * iH1;
-        const boxesLimit1 = Math.floor(maxVol1Container / item1Vol);
-        maxPallets1 = k1 > 0 ? Math.ceil(boxesLimit1 / k1) : 0;
+        boxesLimit1 = Math.floor(maxVol1Container / item1Vol);
       }
-      if (hasSecondaryItem) {
-        if (options?.maxVolume2 && options.maxVolume2 > 0) {
-          const maxVol2Container = convertVolumeToContainerUnit(options.maxVolume2, volUnit, containerUnit);
-          const item2Vol = options.item2!.length * options.item2!.width * options.item2!.height;
-          const boxesLimit2 = Math.floor(maxVol2Container / item2Vol);
-          maxPallets2 = k2 > 0 ? Math.ceil(boxesLimit2 / k2) : 0;
-        } else {
-          maxPallets2 = Infinity;
-        }
+      if (hasSecondaryItem && options?.maxVolume2 && options.maxVolume2 > 0) {
+        const maxVol2Container = convertVolumeToContainerUnit(options.maxVolume2, volUnit, containerUnit);
+        const item2Vol = options.item2!.length * options.item2!.width * options.item2!.height;
+        boxesLimit2 = Math.floor(maxVol2Container / item2Vol);
       }
     }
+
+    const maxPallets1 = k1 > 0 ? Math.ceil(boxesLimit1 / k1) : 0;
+    const maxPallets2 = k2 > 0 ? Math.ceil(boxesLimit2 / k2) : 0;
 
     // Now, pack the virtual loaded pallets into the container
     const pallet1Block: Dimensions = { length: pL, width: pW, height: totalPalletH1 };
@@ -208,24 +203,16 @@ export function calculateBestPacking(
 
     for (const packedPallet of palletPackingResult.items) {
       const isType2 = packedPallet.type === 2;
-      const palletType = packedPallet.type;
-      
-      recordedPallets.push({
-        x: packedPallet.x,
-        y: packedPallet.y,
-        z: packedPallet.z,
-        dx: packedPallet.dx,
-        dy: packedPallet.dy,
-        dz: palletWoodHeight,
-        type: palletType
-      });
-
       const singlePacking = isType2 ? singlePalletPacking2 : singlePalletPacking1;
       if (!singlePacking) continue;
 
       const isRotated = Math.abs(packedPallet.dx - pW) < 0.001; // Width is along Length
+      const palletBoxes: PackedItem[] = [];
 
       for (const box of singlePacking.items) {
+        if (!isType2 && boxes1Count >= boxesLimit1) continue;
+        if (isType2 && boxes2Count >= boxesLimit2) continue;
+
         let finalX = 0;
         let finalY = 0;
         let finalDx = box.dx;
@@ -246,7 +233,7 @@ export function calculateBestPacking(
           finalOriginalDy = box.originalDx;
         }
 
-        expandedBoxes.push({
+        palletBoxes.push({
           x: finalX,
           y: finalY,
           z: packedPallet.z + box.z + palletWoodHeight,
@@ -264,6 +251,20 @@ export function calculateBestPacking(
         } else {
           boxes1Count++;
         }
+      }
+
+      // Only record the pallet and its boxes if it actually contains boxes
+      if (palletBoxes.length > 0) {
+        expandedBoxes.push(...palletBoxes);
+        recordedPallets.push({
+          x: packedPallet.x,
+          y: packedPallet.y,
+          z: packedPallet.z,
+          dx: packedPallet.dx,
+          dy: packedPallet.dy,
+          dz: palletWoodHeight,
+          type: packedPallet.type
+        });
       }
     }
 
