@@ -17,11 +17,22 @@ export interface PackedItem {
   type: 1 | 2;         // 1: Primary item, 2: Secondary item
 }
 
+export interface PackedPallet {
+  x: number;
+  y: number;
+  z: number;
+  dx: number;
+  dy: number;
+  dz: number;
+  type: 1 | 2;         // 1: Loaded with item 1, 2: Loaded with item 2
+}
+
 export interface PackingResult {
   count: number;
   count1: number;
   count2: number;
   items: PackedItem[];
+  pallets?: PackedPallet[];
   efficiency: number;
   waste: number;
   orientation: Dimensions;
@@ -34,10 +45,16 @@ export interface PackingOptions {
   item2?: Dimensions;
   maxVolume1?: number; // In volumeUnit, 0 or undefined means unlimited
   maxVolume2?: number; // In volumeUnit, 0 or undefined means unlimited
+  maxCount1?: number;  // Max quantity for Item 1
+  maxCount2?: number;  // Max quantity for Item 2
+  limitMode?: 'volume' | 'quantity';
   volumeUnit?: 'ft3' | 'cm3' | 'm3';
   containerUnit: 'in' | 'cm' | 'ft';
   distributionMode?: 'optimal' | 'split' | 'x-first' | 'y-first' | 'z-first';
   errorMargin?: boolean;
+  restrictToHorizontal?: boolean; // Restrict rotation to horizontal plane (Z-axis only)
+  palletMode?: boolean;
+  palletType?: 'eur' | 'us';
 }
 
 interface Space {
@@ -85,9 +102,203 @@ export function calculateBestPacking(
     };
   }
 
+  const containerUnit = options?.containerUnit || 'cm';
+
+  // --- PALLET SIMULATION MODE ---
+  if (options?.palletMode) {
+    const palletWoodHeight = containerUnit === 'cm' ? 15 : (containerUnit === 'in' ? 5.9 : 0.49);
+    let pL = containerUnit === 'cm' ? 120 : (containerUnit === 'in' ? 47.2 : 3.94);
+    let pW = containerUnit === 'cm' ? 80 : (containerUnit === 'in' ? 31.5 : 2.62);
+
+    if (options.palletType === 'us') {
+      pL = containerUnit === 'cm' ? 122 : (containerUnit === 'in' ? 48.0 : 4.00);
+      pW = containerUnit === 'cm' ? 102 : (containerUnit === 'in' ? 40.0 : 3.33);
+    }
+
+    // 1. Pack Item 1 on a single pallet
+    const maxCargoH = Math.max(0.1, cH - palletWoodHeight);
+    const singlePalletPacking1 = calculateBestPacking(
+      item1,
+      { length: pL, width: pW, height: maxCargoH },
+      { containerUnit, errorMargin: options.errorMargin }
+    );
+    const k1 = singlePalletPacking1.count;
+    const cargoH1 = k1 > 0 ? Math.max(...singlePalletPacking1.items.map(i => i.z + i.dz)) : 0;
+    const totalPalletH1 = cargoH1 + palletWoodHeight;
+
+    // 2. Pack Item 2 on a single pallet (if active)
+    let k2 = 0;
+    let totalPalletH2 = 0;
+    let singlePalletPacking2: PackingResult | null = null;
+    const hasSecondaryItem = !!options?.item2 && (options.item2.length > 0 && options.item2.width > 0 && options.item2.height > 0);
+
+    if (hasSecondaryItem) {
+      singlePalletPacking2 = calculateBestPacking(
+        options.item2!,
+        { length: pL, width: pW, height: maxCargoH },
+        { containerUnit, errorMargin: options.errorMargin }
+      );
+      k2 = singlePalletPacking2.count;
+      const cargoH2 = k2 > 0 ? Math.max(...singlePalletPacking2.items.map(i => i.z + i.dz)) : 0;
+      totalPalletH2 = cargoH2 + palletWoodHeight;
+    }
+
+    // Convert item constraints to pallet constraints
+    let maxPallets1 = Infinity;
+    let maxPallets2 = 0;
+
+    const limitMode = options?.limitMode || 'volume';
+
+    if (limitMode === 'quantity') {
+      if (options?.maxCount1 && options.maxCount1 > 0) {
+        maxPallets1 = k1 > 0 ? Math.ceil(options.maxCount1 / k1) : 0;
+      }
+      if (hasSecondaryItem && options?.maxCount2 && options.maxCount2 > 0) {
+        maxPallets2 = k2 > 0 ? Math.ceil(options.maxCount2 / k2) : 0;
+      } else if (hasSecondaryItem) {
+        maxPallets2 = Infinity;
+      }
+    } else {
+      const volUnit = options?.volumeUnit || 'cm3';
+      if (options?.maxVolume1 && options.maxVolume1 > 0) {
+        const maxVol1Container = convertVolumeToContainerUnit(options.maxVolume1, volUnit, containerUnit);
+        const item1Vol = iL1 * iW1 * iH1;
+        const boxesLimit1 = Math.floor(maxVol1Container / item1Vol);
+        maxPallets1 = k1 > 0 ? Math.ceil(boxesLimit1 / k1) : 0;
+      }
+      if (hasSecondaryItem) {
+        if (options?.maxVolume2 && options.maxVolume2 > 0) {
+          const maxVol2Container = convertVolumeToContainerUnit(options.maxVolume2, volUnit, containerUnit);
+          const item2Vol = options.item2!.length * options.item2!.width * options.item2!.height;
+          const boxesLimit2 = Math.floor(maxVol2Container / item2Vol);
+          maxPallets2 = k2 > 0 ? Math.ceil(boxesLimit2 / k2) : 0;
+        } else {
+          maxPallets2 = Infinity;
+        }
+      }
+    }
+
+    // Now, pack the virtual loaded pallets into the container
+    const pallet1Block: Dimensions = { length: pL, width: pW, height: totalPalletH1 };
+    const pallet2Block: Dimensions | undefined = hasSecondaryItem
+      ? { length: pL, width: pW, height: totalPalletH2 }
+      : undefined;
+
+    const palletPackingResult = calculateBestPacking(
+      pallet1Block,
+      container,
+      {
+        item2: pallet2Block,
+        limitMode: 'quantity',
+        maxCount1: maxPallets1,
+        maxCount2: maxPallets2,
+        restrictToHorizontal: true,
+        containerUnit,
+        errorMargin: false, // Pallets are loaded perfectly next to each other
+        distributionMode: options.distributionMode
+      }
+    );
+
+    // Expand packed pallets into boxes and record wood bases
+    const expandedBoxes: PackedItem[] = [];
+    const recordedPallets: PackedPallet[] = [];
+
+    let boxes1Count = 0;
+    let boxes2Count = 0;
+
+    for (const packedPallet of palletPackingResult.items) {
+      const isType2 = packedPallet.type === 2;
+      const palletType = packedPallet.type;
+      
+      recordedPallets.push({
+        x: packedPallet.x,
+        y: packedPallet.y,
+        z: packedPallet.z,
+        dx: packedPallet.dx,
+        dy: packedPallet.dy,
+        dz: palletWoodHeight,
+        type: palletType
+      });
+
+      const singlePacking = isType2 ? singlePalletPacking2 : singlePalletPacking1;
+      if (!singlePacking) continue;
+
+      const isRotated = Math.abs(packedPallet.dx - pW) < 0.001; // Width is along Length
+
+      for (const box of singlePacking.items) {
+        let finalX = 0;
+        let finalY = 0;
+        let finalDx = box.dx;
+        let finalDy = box.dy;
+        let finalOriginalDx = box.originalDx;
+        let finalOriginalDy = box.originalDy;
+
+        if (!isRotated) {
+          finalX = packedPallet.x + box.x;
+          finalY = packedPallet.y + box.y;
+        } else {
+          // 90 degree rotation
+          finalX = packedPallet.x + (pW - box.y - box.dy);
+          finalY = packedPallet.y + box.x;
+          finalDx = box.dy;
+          finalDy = box.dx;
+          finalOriginalDx = box.originalDy;
+          finalOriginalDy = box.originalDx;
+        }
+
+        expandedBoxes.push({
+          x: finalX,
+          y: finalY,
+          z: packedPallet.z + box.z + palletWoodHeight,
+          dx: finalDx,
+          dy: finalDy,
+          dz: box.dz,
+          originalDx: finalOriginalDx,
+          originalDy: finalOriginalDy,
+          originalDz: box.originalDz,
+          type: isType2 ? 2 : 1
+        });
+
+        if (isType2) {
+          boxes2Count++;
+        } else {
+          boxes1Count++;
+        }
+      }
+    }
+
+    const item1Vol = iL1 * iW1 * iH1;
+    const item2Vol = hasSecondaryItem ? (options.item2!.length * options.item2!.width * options.item2!.height) : 0;
+    const contVol = cL * cW * cH;
+    const totalUsedVol = boxes1Count * item1Vol + boxes2Count * item2Vol;
+    const efficiency = (totalUsedVol / contVol) * 100;
+    const waste = Math.max(0, contVol - totalUsedVol);
+
+    return {
+      count: expandedBoxes.length,
+      count1: boxes1Count,
+      count2: boxes2Count,
+      items: expandedBoxes,
+      pallets: recordedPallets,
+      efficiency,
+      waste,
+      orientation: {
+        length: singlePalletPacking1.orientation.length,
+        width: singlePalletPacking1.orientation.width,
+        height: singlePalletPacking1.orientation.height
+      },
+      orientation2: singlePalletPacking2 ? {
+        length: singlePalletPacking2.orientation.length,
+        width: singlePalletPacking2.orientation.width,
+        height: singlePalletPacking2.orientation.height
+      } : undefined,
+      layout: palletPackingResult.layout,
+      layout2: hasSecondaryItem ? palletPackingResult.layout2 : undefined
+    };
+  }
+
   // Determine error margin
   const errorMarginActive = !!options?.errorMargin;
-  const containerUnit = options?.containerUnit || 'cm';
   // Standard margin value (equivalent to ~0.8cm): 0.8 cm, 0.3 in, 0.026 ft
   const margin = errorMarginActive
     ? (containerUnit === 'cm' ? 0.8 : (containerUnit === 'in' ? 0.3 : 0.026))
@@ -97,12 +308,19 @@ export function calculateBestPacking(
   let limit1 = Infinity;
   let limit2 = 0;
 
-  const volUnit = options?.volumeUnit || 'cm3';
+  const limitMode = options?.limitMode || 'volume';
 
-  if (options?.maxVolume1 && options.maxVolume1 > 0) {
-    const maxVol1Container = convertVolumeToContainerUnit(options.maxVolume1, volUnit, containerUnit);
-    const item1Vol = iL1 * iW1 * iH1;
-    limit1 = Math.floor(maxVol1Container / item1Vol);
+  if (limitMode === 'quantity') {
+    if (options?.maxCount1 && options.maxCount1 > 0) {
+      limit1 = options.maxCount1;
+    }
+  } else {
+    const volUnit = options?.volumeUnit || 'cm3';
+    if (options?.maxVolume1 && options.maxVolume1 > 0) {
+      const maxVol1Container = convertVolumeToContainerUnit(options.maxVolume1, volUnit, containerUnit);
+      const item1Vol = iL1 * iW1 * iH1;
+      limit1 = Math.floor(maxVol1Container / item1Vol);
+    }
   }
 
   const hasSecondaryItem = !!options?.item2 && (options.item2.length > 0 && options.item2.width > 0 && options.item2.height > 0);
@@ -111,26 +329,41 @@ export function calculateBestPacking(
   const iH2 = options?.item2?.height || 0;
 
   if (hasSecondaryItem) {
-    if (options?.maxVolume2 && options.maxVolume2 > 0) {
-      const maxVol2Container = convertVolumeToContainerUnit(options.maxVolume2, volUnit, containerUnit);
-      const item2Vol = iL2 * iW2 * iH2;
-      limit2 = Math.floor(maxVol2Container / item2Vol);
+    if (limitMode === 'quantity') {
+      if (options?.maxCount2 && options.maxCount2 > 0) {
+        limit2 = options.maxCount2;
+      } else {
+        limit2 = Infinity;
+      }
     } else {
-      limit2 = Infinity; // secondary item is enabled but unlimited
+      const volUnit = options?.volumeUnit || 'cm3';
+      if (options?.maxVolume2 && options.maxVolume2 > 0) {
+        const maxVol2Container = convertVolumeToContainerUnit(options.maxVolume2, volUnit, containerUnit);
+        const item2Vol = iL2 * iW2 * iH2;
+        limit2 = Math.floor(maxVol2Container / item2Vol);
+      } else {
+        limit2 = Infinity; // secondary item is enabled but unlimited
+      }
     }
   }
 
-  const orientations1 = [
-    [iL1, iW1, iH1], [iL1, iH1, iW1],
-    [iW1, iL1, iH1], [iW1, iH1, iL1],
-    [iH1, iL1, iW1], [iH1, iW1, iL1]
-  ];
+  const orientations1 = options?.restrictToHorizontal
+    ? [[iL1, iW1, iH1], [iW1, iL1, iH1]]
+    : [
+        [iL1, iW1, iH1], [iL1, iH1, iW1],
+        [iW1, iL1, iH1], [iW1, iH1, iL1],
+        [iH1, iL1, iW1], [iH1, iW1, iL1]
+      ];
 
-  const orientations2 = hasSecondaryItem ? [
-    [iL2, iW2, iH2], [iL2, iH2, iW2],
-    [iW2, iL2, iH2], [iW2, iH2, iL2],
-    [iH2, iL2, iW2], [iH2, iW2, iL2]
-  ] : [];
+  const orientations2 = hasSecondaryItem
+    ? (options?.restrictToHorizontal
+      ? [[iL2, iW2, iH2], [iW2, iL2, iH2]]
+      : [
+          [iL2, iW2, iH2], [iL2, iH2, iW2],
+          [iW2, iL2, iH2], [iW2, iH2, iL2],
+          [iH2, iL2, iW2], [iH2, iW2, iL2]
+        ])
+    : [];
 
   let absoluteBestItems: PackedItem[] = [];
   let absoluteBestOri1 = orientations1[0];
@@ -227,7 +460,6 @@ export function calculateBestPacking(
 
           if (allowed > 0) {
             const vol = allowed * (ori[0] * ori[1] * ori[2]);
-            // Prefer Item 2 if it packs more volume or if we specifically can't pack Item 1 anymore
             if (vol > maxSpaceVolume) {
               maxSpaceVolume = vol;
               bestSpaceOri = ori;
@@ -250,8 +482,6 @@ export function calculateBestPacking(
         if (selectedItemType === 1) {
           const remaining = limit1 - packed1Count;
           if (nx * ny * nz > remaining) {
-            // Find a way to reduce nx, ny, nz to match remaining
-            // Greedily reduce from height, then width, then length
             while (nx * ny * nz > remaining && nz > 0) {
               nz--;
             }
@@ -290,7 +520,6 @@ export function calculateBestPacking(
         }
 
         // Add packed items using ordering based on distribution mode
-        // Define loops depending on the first axis we want to stack along
         const addPackedItem = (ix: number, iy: number, iz: number) => {
           currentItems.push({
             x: space.x + ix * paddedL,
@@ -307,7 +536,6 @@ export function calculateBestPacking(
         };
 
         if (distMode === 'z-first') {
-          // Fill columns first: loop z inner, then y, then x
           for (let ix = 0; ix < nx; ix++) {
             for (let iy = 0; iy < ny; iy++) {
               for (let iz = 0; iz < nz; iz++) {
@@ -316,7 +544,6 @@ export function calculateBestPacking(
             }
           }
         } else if (distMode === 'x-first') {
-          // Fill along length first: loop x inner, then y, then z
           for (let iz = 0; iz < nz; iz++) {
             for (let iy = 0; iy < ny; iy++) {
               for (let ix = 0; ix < nx; ix++) {
@@ -325,7 +552,6 @@ export function calculateBestPacking(
             }
           }
         } else if (distMode === 'y-first') {
-          // Fill along width first: loop y inner, then x, then z
           for (let iz = 0; iz < nz; iz++) {
             for (let ix = 0; ix < nx; ix++) {
               for (let iy = 0; iy < ny; iy++) {
@@ -334,7 +560,6 @@ export function calculateBestPacking(
             }
           }
         } else {
-          // Default loop
           for (let ix = 0; ix < nx; ix++) {
             for (let iy = 0; iy < ny; iy++) {
               for (let iz = 0; iz < nz; iz++) {
@@ -349,21 +574,18 @@ export function calculateBestPacking(
         const usedW = ny * paddedW;
         const usedH = nz * paddedH;
 
-        // Space 1: Rest of L
         if (space.l - usedL > 0.001) {
           spaces.push({
             l: space.l - usedL, w: space.w, h: space.h,
             x: space.x + usedL, y: space.y, z: space.z
           });
         }
-        // Space 2: Rest of W
         if (space.w - usedW > 0.001) {
           spaces.push({
             l: usedL, w: space.w - usedW, h: space.h,
             x: space.x, y: space.y + usedW, z: space.z
           });
         }
-        // Space 3: Rest of H
         if (space.h - usedH > 0.001) {
           spaces.push({
             l: usedL, w: usedW, h: space.h - usedH,
@@ -374,13 +596,11 @@ export function calculateBestPacking(
       isFirstSpace = false;
     }
 
-    // Compare this packing outcome
     if (currentItems.length > absoluteBestItems.length) {
       absoluteBestItems = currentItems;
       absoluteBestOri1 = primaryOri;
       absoluteBestLayout1 = baseLayout1;
       absoluteBestLayout2 = baseLayout2;
-      // Find what the best orientation for Item 2 was in this run
       const item2InBest = currentItems.find(i => i.type === 2);
       if (item2InBest) {
         absoluteBestOri2 = [item2InBest.originalDx, item2InBest.originalDy, item2InBest.originalDz];
@@ -404,6 +624,8 @@ export function calculateBestPacking(
     count1,
     count2,
     items: absoluteBestItems,
+    efficiency,
+    waste,
     orientation: {
       length: absoluteBestOri1[0],
       width: absoluteBestOri1[1],
@@ -415,8 +637,6 @@ export function calculateBestPacking(
       height: absoluteBestOri2[2]
     } : undefined,
     layout: absoluteBestLayout1,
-    layout2: hasSecondaryItem ? absoluteBestLayout2 : undefined,
-    efficiency,
-    waste
+    layout2: hasSecondaryItem ? absoluteBestLayout2 : undefined
   };
 }

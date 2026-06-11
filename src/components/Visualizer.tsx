@@ -3,6 +3,115 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Dimensions, PackingResult } from '../lib/packing';
 
+function createDetailedPallet(
+  dx: number,
+  dy: number,
+  dz: number,
+  posX: number,
+  posY: number,
+  posZ: number
+): THREE.Group {
+  const group = new THREE.Group();
+  group.position.set(posX, posY, posZ);
+
+  // Material: warm pine wood color
+  const woodColor = 0xc29b6a;
+  
+  const createWoodMaterial = () => new THREE.MeshPhongMaterial({
+    color: woodColor,
+    transparent: true,
+    opacity: 0,
+    depthWrite: true,
+  });
+
+  const edgeMaterial = new THREE.LineBasicMaterial({
+    color: 0x5c4033,
+    opacity: 0.4,
+    transparent: true,
+  });
+
+  // Height dz is composed of standard wooden pallet layers:
+  // - Top deck boards (T): 15% of dz
+  // - Runner boards (R): 15% of dz
+  // - Blocks (B): 55% of dz
+  // - Bottom boards (L): 15% of dz
+  const T = dz * 0.15;
+  const R = dz * 0.15;
+  const B = dz * 0.55;
+  const L = dz * 0.15;
+
+  // 1. Bottom boards (3 boards running along length dx)
+  const bottomSlatWidth = Math.min(dy * 0.12, 12);
+  const bottomSlatGeo = new THREE.BoxGeometry(dx, L, bottomSlatWidth);
+  const bottomZPos = [-dy / 2 + bottomSlatWidth / 2, 0, dy / 2 - bottomSlatWidth / 2];
+
+  for (const bz of bottomZPos) {
+    const mesh = new THREE.Mesh(bottomSlatGeo, createWoodMaterial());
+    mesh.userData = { isPackedItem: true, isPalletWood: true };
+    mesh.position.set(0, -dz / 2 + L / 2, bz);
+
+    const edges = new THREE.EdgesGeometry(bottomSlatGeo);
+    const lines = new THREE.LineSegments(edges, edgeMaterial);
+    mesh.add(lines);
+    group.add(mesh);
+  }
+
+  // 2. Middle blocks (9 rectangular blocks)
+  const blockLength = Math.min(dx * 0.10, 10);
+  const blockWidth = Math.min(dy * 0.10, 10);
+  const blockGeo = new THREE.BoxGeometry(blockLength, B, blockWidth);
+  const blockXPos = [-dx / 2 + blockLength / 2, 0, dx / 2 - blockLength / 2];
+  const blockZPos = [-dy / 2 + blockWidth / 2, 0, dy / 2 - blockWidth / 2];
+
+  for (const bx of blockXPos) {
+    for (const bz of blockZPos) {
+      const mesh = new THREE.Mesh(blockGeo, createWoodMaterial());
+      mesh.userData = { isPackedItem: true, isPalletWood: true };
+      mesh.position.set(bx, -dz / 2 + L + B / 2, bz);
+
+      const edges = new THREE.EdgesGeometry(blockGeo);
+      const lines = new THREE.LineSegments(edges, edgeMaterial);
+      mesh.add(lines);
+      group.add(mesh);
+    }
+  }
+
+  // 3. Runner boards (3 boards running along length dx on top of blocks)
+  const runnerWidth = Math.min(dy * 0.12, 12);
+  const runnerGeo = new THREE.BoxGeometry(dx, R, runnerWidth);
+  const runnerZPos = [-dy / 2 + runnerWidth / 2, 0, dy / 2 - runnerWidth / 2];
+
+  for (const rz of runnerZPos) {
+    const mesh = new THREE.Mesh(runnerGeo, createWoodMaterial());
+    mesh.userData = { isPackedItem: true, isPalletWood: true };
+    mesh.position.set(0, -dz / 2 + L + B + R / 2, rz);
+
+    const edges = new THREE.EdgesGeometry(runnerGeo);
+    const lines = new THREE.LineSegments(edges, edgeMaterial);
+    mesh.add(lines);
+    group.add(mesh);
+  }
+
+  // 4. Top slats (5 boards running along width dy across runners)
+  const topSlatWidth = Math.min(dx * 0.12, 12);
+  const topSlatGeo = new THREE.BoxGeometry(topSlatWidth, T, dy);
+  const spacing = (dx - topSlatWidth) / 4;
+
+  for (let i = 0; i < 5; i++) {
+    const tx = -dx / 2 + topSlatWidth / 2 + i * spacing;
+    const mesh = new THREE.Mesh(topSlatGeo, createWoodMaterial());
+    mesh.userData = { isPackedItem: true, isPalletWood: true };
+    mesh.position.set(tx, dz / 2 - T / 2, 0);
+
+    const edges = new THREE.EdgesGeometry(topSlatGeo);
+    const lines = new THREE.LineSegments(edges, edgeMaterial);
+    mesh.add(lines);
+    group.add(mesh);
+  }
+
+  return group;
+}
+
 interface VisualizerProps {
   item: Dimensions;
   container: Dimensions;
@@ -229,7 +338,9 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
         packedGroupRef.current.traverse((child) => {
           if (child instanceof THREE.Mesh && child.userData.isPackedItem) {
             if (child.material instanceof THREE.Material) {
-              child.material.opacity = currentPackedOpacity.current;
+              child.material.opacity = child.userData.isPalletWood
+                ? Math.min(0.9, currentPackedOpacity.current * 1.3)
+                : currentPackedOpacity.current;
             }
           }
         });
@@ -419,6 +530,21 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
 
           packedGroup.add(m);
           created++;
+      }
+
+      // Render wooden pallets if present in result
+      if (result.pallets && result.pallets.length > 0) {
+        for (const pPallet of result.pallets) {
+          const pGroup = createDetailedPallet(
+            pPallet.dx,
+            pPallet.dy,
+            pPallet.dz,
+            (-cL / 2) + pPallet.x + (pPallet.dx / 2),
+            pPallet.z + (pPallet.dz / 2),
+            (-cW / 2) + pPallet.y + (pPallet.dy / 2)
+          );
+          packedGroup.add(pGroup);
+        }
       }
 
       // Start from slight offset and zero opacity for a "entry" animation

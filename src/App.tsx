@@ -22,9 +22,14 @@ export default function App() {
   // Advanced configurations
   const [errorMargin, setErrorMargin] = useState(false);
   const [multiItemMode, setMultiItemMode] = useState(false);
+  const [palletMode, setPalletMode] = useState(false);
+  const [palletType, setPalletType] = useState<'eur' | 'us'>('eur');
+  const [limitMode, setLimitMode] = useState<'volume' | 'quantity'>('volume');
   const [volumeUnit, setVolumeUnit] = useState<'ft3' | 'cm3' | 'm3'>('ft3');
   const [maxVolume1, setMaxVolume1] = useState('');
   const [maxVolume2, setMaxVolume2] = useState('');
+  const [maxCount1, setMaxCount1] = useState('');
+  const [maxCount2, setMaxCount2] = useState('');
   const [item2, setItem2] = useState({ length: '8', width: '5', height: '3' });
   const [distributionMode, setDistributionMode] = useState<'optimal' | 'split' | 'x-first' | 'y-first' | 'z-first'>('optimal');
 
@@ -32,6 +37,7 @@ export default function App() {
   const [highlightContainer, setHighlightContainer] = useState(false);
   const [activeTab, setActiveTab] = useState('visualizer');
   const [forceSquareContainer, setForceSquareContainer] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const convertUnit = (val: number, from: 'cm' | 'in' | 'ft', to: 'cm' | 'in' | 'ft'): number => {
     if (from === to) return val;
@@ -116,12 +122,17 @@ export default function App() {
       item2: convertedItem2,
       maxVolume1: multiItemMode ? (parseFloat(maxVolume1) || 0) : 0,
       maxVolume2: multiItemMode ? (parseFloat(maxVolume2) || 0) : 0,
+      maxCount1: multiItemMode ? (parseInt(maxCount1) || 0) : 0,
+      maxCount2: multiItemMode ? (parseInt(maxCount2) || 0) : 0,
+      limitMode: limitMode,
       volumeUnit: volumeUnit,
       containerUnit: containerUnit,
       distributionMode: distributionMode,
       errorMargin: errorMargin,
+      palletMode: palletMode,
+      palletType: palletType,
     });
-  }, [item, container, item2, itemUnit, containerUnit, errorMargin, multiItemMode, volumeUnit, maxVolume1, maxVolume2, distributionMode]);
+  }, [item, container, item2, itemUnit, containerUnit, errorMargin, multiItemMode, volumeUnit, maxVolume1, maxVolume2, maxCount1, maxCount2, limitMode, distributionMode, palletMode, palletType]);
 
   const itemVolFt3 = useMemo(() => {
     const l = parseFloat(item.length) || 0;
@@ -197,7 +208,7 @@ export default function App() {
             <div className="flex-1 space-y-6 p-6 overflow-y-auto">
               {/* Unit Toggle */}
               <section className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
+                <div className="space-y-3 text-left">
                   <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Item Unit</Label>
                   <Tabs value={itemUnit} onValueChange={(v) => handleItemUnitChange(v as 'in' | 'cm' | 'ft')} className="w-full">
                     <TabsList className="grid w-full grid-cols-3 bg-slate-950 border border-slate-800">
@@ -207,41 +218,15 @@ export default function App() {
                     </TabsList>
                   </Tabs>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-3 text-left">
                   <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Container Unit</Label>
-                  <div className="flex flex-col gap-1.5">
-                    {/* Story 1: Unit Selector */}
-                    <Tabs value={containerUnit} onValueChange={(v) => handleContainerUnitChange(v as 'in' | 'cm' | 'ft')} className="w-full">
-                      <TabsList className="grid w-full grid-cols-3 bg-slate-950 border border-slate-800">
-                        <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">IN</TabsTrigger>
-                        <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">CM</TabsTrigger>
-                        <TabsTrigger value="ft" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">FT</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    {/* Story 2: Shortcuts */}
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleApplyPreset(20)}
-                        type="button"
-                        className="h-7 text-[9px] font-mono border-slate-800 bg-slate-950/40 text-sky-400 hover:bg-sky-500/10 hover:text-sky-300"
-                        title="Medidas internas de contenedor de 20 pies"
-                      >
-                        20' PRESET
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleApplyPreset(40)}
-                        type="button"
-                        className="h-7 text-[9px] font-mono border-slate-800 bg-slate-950/40 text-sky-400 hover:bg-sky-500/10 hover:text-sky-300"
-                        title="Medidas internas de contenedor de 40 pies"
-                      >
-                        40' PRESET
-                      </Button>
-                    </div>
-                  </div>
+                  <Tabs value={containerUnit} onValueChange={(v) => handleContainerUnitChange(v as 'in' | 'cm' | 'ft')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 bg-slate-950 border border-slate-800">
+                      <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">IN</TabsTrigger>
+                      <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">CM</TabsTrigger>
+                      <TabsTrigger value="ft" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">FT</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
               </section>
 
@@ -295,8 +280,25 @@ export default function App() {
               <section className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Container Dimensions</Label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <button
+                      type="button"
+                      onClick={() => handleApplyPreset(20)}
+                      className="inline-flex items-center rounded-full border border-slate-800 px-2 py-0.5 text-[9px] font-mono text-slate-500 hover:text-sky-400 hover:border-sky-500/30 transition-colors bg-transparent focus:outline-none"
+                      title="Establecer dimensiones internas de 20 pies"
+                    >
+                      20FT
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPreset(40)}
+                      className="inline-flex items-center rounded-full border border-slate-800 px-2 py-0.5 text-[9px] font-mono text-slate-500 hover:text-sky-400 hover:border-sky-500/30 transition-colors bg-transparent focus:outline-none"
+                      title="Establecer dimensiones internas de 40 pies"
+                    >
+                      40FT
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setForceSquareContainer(!forceSquareContainer);
                         if (!forceSquareContainer) {
@@ -313,6 +315,7 @@ export default function App() {
                       CUBE
                     </button>
                     <button
+                      type="button"
                       onClick={() => setHighlightContainer(!highlightContainer)}
                       className={`inline-flex items-center justify-center rounded-full border w-6 h-6 transition-colors focus:outline-none ${highlightContainer
                           ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_8px_rgba(16,185,129,0.25)]'
@@ -322,7 +325,6 @@ export default function App() {
                     >
                       <Lightbulb className="w-3 h-3" />
                     </button>
-                    <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400">INPUT_B</Badge>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
@@ -363,186 +365,311 @@ export default function App() {
 
               <Separator className="bg-slate-800" />
 
-              {/* Margen de Error Humano Toggle */}
-              <div className="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-xl p-3">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${errorMargin ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-800'}`} />
-                  <div className="flex flex-col text-left">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-200">Margen de Error Realista</span>
-                    <span className="text-[8px] text-slate-500 font-mono">Tolerancia humana (+0.8cm)</span>
-                  </div>
-                </div>
+              {/* Panel de Opciones Avanzadas Unificado */}
+              <section className="space-y-3">
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={() => setErrorMargin(!errorMargin)}
+                  onClick={() => setAdvancedOpen(!advancedOpen)}
                   type="button"
-                  className={`h-7 px-3 text-[9px] font-mono transition-all duration-300 ${
-                    errorMargin
-                      ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
-                      : 'border-slate-800 text-slate-400 hover:text-slate-200'
+                  className={`w-full flex justify-between items-center h-10 px-4 text-xs font-bold uppercase tracking-wider transition-colors border-slate-800 ${
+                    advancedOpen ? 'bg-slate-900/60 text-sky-400' : 'bg-transparent text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {errorMargin ? 'ON' : 'OFF'}
+                  <span>Configuración Avanzada</span>
+                  <span className="text-[10px] font-mono opacity-60">
+                    {advancedOpen ? '▲ OCULTAR' : '▼ MOSTRAR'}
+                  </span>
                 </Button>
-              </div>
-
-              <Separator className="bg-slate-800" />
-
-              {/* Modo de Espacio Útil Limitado & Multi-Item */}
-              <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col text-left">
-                    <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Configuración Avanzada</Label>
-                    <span className="text-[9px] text-slate-600 font-mono">Espacio útil & Multi-Ítem</span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setMultiItemMode(!multiItemMode);
-                      setShowResult(false);
-                    }}
-                    type="button"
-                    className={`h-7 px-2.5 text-[9px] font-bold uppercase transition-all duration-300 ${
-                      multiItemMode
-                        ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
-                        : 'border-slate-800 text-slate-500 hover:text-slate-400'
-                    }`}
-                  >
-                    {multiItemMode ? 'Activo' : 'Desactivado'}
-                  </Button>
-                </div>
 
                 <AnimatePresence initial={false}>
-                  {multiItemMode && (
+                  {advancedOpen && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="overflow-hidden space-y-4 pt-1"
+                      className="overflow-hidden"
                     >
-                      {/* Selector de Unidad de Volumen */}
-                      <div className="space-y-2 text-left">
-                        <Label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Unidad de Volumen Limitador</Label>
-                        <Tabs value={volumeUnit} onValueChange={(v) => setVolumeUnit(v as 'ft3' | 'cm3' | 'm3')} className="w-full">
-                          <TabsList className="grid w-full grid-cols-3 bg-slate-950 border border-slate-800 h-8">
-                            <TabsTrigger value="ft3" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 text-[9px] font-bold">FT³</TabsTrigger>
-                            <TabsTrigger value="cm3" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 text-[9px] font-bold">CM³</TabsTrigger>
-                            <TabsTrigger value="m3" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 text-[9px] font-bold">M³</TabsTrigger>
-                          </TabsList>
-                        </Tabs>
-                      </div>
-
-                      {/* Límite Item 1 */}
-                      <div className="space-y-1.5 text-left">
-                        <div className="flex justify-between items-center">
-                          <Label htmlFor="maxVol1" className="text-[10px] text-slate-400">Límite Volumen Ítem 1 ({volumeUnit})</Label>
-                          <span className="text-[8px] text-slate-600 font-mono">0 = Sin Límite</span>
-                        </div>
-                        <Input
-                          id="maxVol1"
-                          type="number"
-                          placeholder="Sin límite"
-                          value={maxVolume1}
-                          onChange={(e) => handleNumericInput(e.target.value, setMaxVolume1)}
-                          className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
-                        />
-                      </div>
-
-                      <Separator className="bg-slate-800/60" />
-
-                      {/* Item 2 Dimensions */}
-                      <div className="space-y-3 text-left">
+                      <div className="bg-slate-900/30 border border-slate-800/80 rounded-xl p-4 space-y-4 mt-2">
+                        {/* 1. Margen de Error Humano */}
                         <div className="flex items-center justify-between">
-                          <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Dimensiones Ítem 2 (Secundario)</Label>
-                          <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-400 h-5 px-1.5 flex items-center justify-center">SECONDARY</Badge>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="space-y-1.5">
-                            <Label htmlFor="iL2" className="text-[9px] text-slate-400">LENGTH</Label>
-                            <Input
-                              id="iL2"
-                              type="number"
-                              value={item2.length}
-                              onChange={(e) => handleItem2Change('length', e.target.value)}
-                              className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-9 text-sm font-mono text-emerald-400"
-                            />
+                          <div className="flex flex-col text-left">
+                            <span className="text-[10px] font-bold uppercase text-slate-300">Margen de Error Realista</span>
+                            <span className="text-[8px] text-slate-500 font-mono">Espaciado humano (+0.8cm)</span>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="iW2" className="text-[9px] text-slate-400">WIDTH</Label>
-                            <Input
-                              id="iW2"
-                              type="number"
-                              value={item2.width}
-                              onChange={(e) => handleItem2Change('width', e.target.value)}
-                              className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-9 text-sm font-mono text-emerald-400"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="iH2" className="text-[9px] text-slate-400">HEIGHT</Label>
-                            <Input
-                              id="iH2"
-                              type="number"
-                              value={item2.height}
-                              onChange={(e) => handleItem2Change('height', e.target.value)}
-                              className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-9 text-sm font-mono text-emerald-400"
-                            />
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setErrorMargin(!errorMargin)}
+                            className={`h-6 px-2.5 text-[9px] font-bold uppercase rounded-md border transition-all ${
+                              errorMargin
+                                ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
+                                : 'border-slate-800 text-slate-500 hover:text-slate-400'
+                            }`}
+                          >
+                            {errorMargin ? 'Activo' : 'Inactivo'}
+                          </button>
                         </div>
-                      </div>
 
-                      {/* Límite Item 2 */}
-                      <div className="space-y-1.5 text-left">
-                        <div className="flex justify-between items-center">
-                          <Label htmlFor="maxVol2" className="text-[10px] text-slate-400">Límite Volumen Ítem 2 ({volumeUnit})</Label>
-                          <span className="text-[8px] text-slate-600 font-mono">0 = Sin Límite</span>
-                        </div>
-                        <Input
-                          id="maxVol2"
-                          type="number"
-                          placeholder="Sin límite"
-                          value={maxVolume2}
-                          onChange={(e) => handleNumericInput(e.target.value, setMaxVolume2)}
-                          className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-9 text-sm font-mono"
-                        />
-                      </div>
+                        <Separator className="bg-slate-800/50" />
 
-                      <Separator className="bg-slate-800/60" />
-
-                      {/* Selector de Modo de Distribución */}
-                      <div className="space-y-2 text-left">
-                        <Label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Patrón de Distribución de Cajas</Label>
-                        <div className="grid grid-cols-5 gap-1">
-                          {[
-                            { id: 'optimal', label: 'Opti' },
-                            { id: 'split', label: 'Split' },
-                            { id: 'x-first', label: 'Largo' },
-                            { id: 'y-first', label: 'Ancho' },
-                            { id: 'z-first', label: 'Fondo' }
-                          ].map((mode) => (
+                        {/* 3. Simulación de Palets */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-col text-left">
+                              <span className="text-[10px] font-bold uppercase text-slate-300">Simulación de Palets</span>
+                              <span className="text-[8px] text-slate-500 font-mono">Organizar cajas en palets</span>
+                            </div>
                             <button
-                              key={mode.id}
                               type="button"
-                              onClick={() => setDistributionMode(mode.id as any)}
-                              className={`h-7 text-[8px] uppercase font-bold rounded border transition-colors ${
-                                distributionMode === mode.id
-                                  ? 'bg-sky-500 border-sky-400 text-slate-950'
-                                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                              onClick={() => {
+                                setPalletMode(!palletMode);
+                                setShowResult(false);
+                              }}
+                              className={`h-6 px-2.5 text-[9px] font-bold uppercase rounded-md border transition-all ${
+                                palletMode
+                                  ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
+                                  : 'border-slate-800 text-slate-500 hover:text-slate-400'
                               }`}
-                              title={
-                                mode.id === 'optimal' ? 'Optimización greedy mixta' :
-                                mode.id === 'split' ? 'Empacar todo el Item 1, luego el Item 2' :
-                                mode.id === 'x-first' ? 'Ordenar a lo largo (Eje X)' :
-                                mode.id === 'y-first' ? 'Ordenar a lo ancho (Eje Y)' :
-                                'Ordenar hacia el fondo / vertical (Eje Z)'
-                              }
                             >
-                              {mode.label}
+                              {palletMode ? 'ON' : 'OFF'}
                             </button>
-                          ))}
+                          </div>
+                          
+                          {palletMode && (
+                            <div className="space-y-1.5 text-left pl-2 border-l border-emerald-500/30">
+                              <Label className="text-[8px] uppercase tracking-widest text-slate-500 font-bold">Tipo de Palet</Label>
+                              <Tabs value={palletType} onValueChange={(v) => {
+                                setPalletType(v as 'eur' | 'us');
+                                setShowResult(false);
+                              }} className="w-full">
+                                <TabsList className="grid w-full grid-cols-2 bg-slate-950 border border-slate-800 h-6 p-0.5">
+                                  <TabsTrigger value="eur" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 text-[8px] font-bold py-0.5">EURO (120x80)</TabsTrigger>
+                                  <TabsTrigger value="us" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 text-[8px] font-bold py-0.5">US (120x100)</TabsTrigger>
+                                </TabsList>
+                              </Tabs>
+                            </div>
+                          )}
                         </div>
+
+                        <Separator className="bg-slate-800/50" />
+
+                        {/* 2. Empaque de Segundo Item */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col text-left">
+                            <span className="text-[10px] font-bold uppercase text-slate-300">Empaque Multi-Ítem</span>
+                            <span className="text-[8px] text-slate-500 font-mono">Habilitar Ítem 2 secundario</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMultiItemMode(!multiItemMode);
+                              setShowResult(false);
+                            }}
+                            className={`h-6 px-2.5 text-[9px] font-bold uppercase rounded-md border transition-all ${
+                              multiItemMode
+                                ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
+                                : 'border-slate-800 text-slate-500 hover:text-slate-400'
+                            }`}
+                          >
+                            {multiItemMode ? 'ON' : 'OFF'}
+                          </button>
+                        </div>
+
+                        {/* Contenido expandible si Multi-Item está activo */}
+                        <AnimatePresence initial={false}>
+                          {multiItemMode && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-4 pt-2 border-t border-slate-800/40 overflow-hidden"
+                            >
+                              {/* 3. Selector de Tipo de Restricción */}
+                              <div className="space-y-1.5 text-left">
+                                <Label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Tipo de Restricción / Límite</Label>
+                                <Tabs value={limitMode} onValueChange={(v) => setLimitMode(v as 'volume' | 'quantity')} className="w-full">
+                                  <TabsList className="grid w-full grid-cols-2 bg-slate-950 border border-slate-800 h-7 p-0.5">
+                                    <TabsTrigger value="volume" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[9px] font-bold py-1">VOLUMEN ÚTIL</TabsTrigger>
+                                    <TabsTrigger value="quantity" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[9px] font-bold py-1">CANTIDAD MÁX.</TabsTrigger>
+                                  </TabsList>
+                                </Tabs>
+                              </div>
+
+                              {/* Campos condicionales según el Tipo de Restricción */}
+                              <AnimatePresence mode="wait">
+                                {limitMode === 'volume' ? (
+                                  <motion.div
+                                    key="volume-inputs"
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 5 }}
+                                    className="space-y-3"
+                                  >
+                                    {/* Selector de Unidad de Volumen */}
+                                    <div className="space-y-1.5 text-left">
+                                      <Label className="text-[8px] uppercase tracking-widest text-slate-500 font-bold">Unidad de Volumen</Label>
+                                      <Tabs value={volumeUnit} onValueChange={(v) => setVolumeUnit(v as 'ft3' | 'cm3' | 'm3')} className="w-full">
+                                        <TabsList className="grid w-full grid-cols-3 bg-slate-950 border border-slate-800 h-7 p-0.5">
+                                          <TabsTrigger value="ft3" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 text-[8px] font-bold py-1">FT³</TabsTrigger>
+                                          <TabsTrigger value="cm3" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 text-[8px] font-bold py-1">CM³</TabsTrigger>
+                                          <TabsTrigger value="m3" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 text-[8px] font-bold py-1">M³</TabsTrigger>
+                                        </TabsList>
+                                      </Tabs>
+                                    </div>
+
+                                    {/* Límite Volumen Ítem 1 */}
+                                    <div className="space-y-1 text-left">
+                                      <div className="flex justify-between items-center">
+                                        <Label htmlFor="maxVol1" className="text-[9px] text-slate-400">Máx. Volumen Ítem 1 ({volumeUnit})</Label>
+                                        <span className="text-[8px] text-slate-600 font-mono">0 = Sin límite</span>
+                                      </div>
+                                      <Input
+                                        id="maxVol1"
+                                        type="number"
+                                        placeholder="Ilimitado"
+                                        value={maxVolume1}
+                                        onChange={(e) => handleNumericInput(e.target.value, setMaxVolume1)}
+                                        className="bg-slate-950 border-slate-800 focus:border-sky-500 h-8 text-xs font-mono"
+                                      />
+                                    </div>
+
+                                    {/* Límite Volumen Ítem 2 */}
+                                    <div className="space-y-1 text-left">
+                                      <div className="flex justify-between items-center">
+                                        <Label htmlFor="maxVol2" className="text-[9px] text-slate-400">Máx. Volumen Ítem 2 ({volumeUnit})</Label>
+                                        <span className="text-[8px] text-slate-600 font-mono">0 = Sin límite</span>
+                                      </div>
+                                      <Input
+                                        id="maxVol2"
+                                        type="number"
+                                        placeholder="Ilimitado"
+                                        value={maxVolume2}
+                                        onChange={(e) => handleNumericInput(e.target.value, setMaxVolume2)}
+                                        className="bg-slate-950 border-slate-800 focus:border-sky-500 h-8 text-xs font-mono"
+                                      />
+                                    </div>
+                                  </motion.div>
+                                ) : (
+                                  <motion.div
+                                    key="quantity-inputs"
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 5 }}
+                                    className="space-y-3"
+                                  >
+                                    {/* Límite Cantidad Ítem 1 */}
+                                    <div className="space-y-1 text-left">
+                                      <div className="flex justify-between items-center">
+                                        <Label htmlFor="maxQty1" className="text-[9px] text-slate-400">Máx. Cajas Ítem 1 (Unidades)</Label>
+                                        <span className="text-[8px] text-slate-600 font-mono">0 = Sin límite</span>
+                                      </div>
+                                      <Input
+                                        id="maxQty1"
+                                        type="number"
+                                        placeholder="Ilimitado"
+                                        value={maxCount1}
+                                        onChange={(e) => handleNumericInput(e.target.value, setMaxCount1)}
+                                        className="bg-slate-950 border-slate-800 focus:border-sky-500 h-8 text-xs font-mono"
+                                      />
+                                    </div>
+
+                                    {/* Límite Cantidad Ítem 2 */}
+                                    <div className="space-y-1 text-left">
+                                      <div className="flex justify-between items-center">
+                                        <Label htmlFor="maxQty2" className="text-[9px] text-slate-400">Máx. Cajas Ítem 2 (Unidades)</Label>
+                                        <span className="text-[8px] text-slate-600 font-mono">0 = Sin límite</span>
+                                      </div>
+                                      <Input
+                                        id="maxQty2"
+                                        type="number"
+                                        placeholder="Ilimitado"
+                                        value={maxCount2}
+                                        onChange={(e) => handleNumericInput(e.target.value, setMaxCount2)}
+                                        className="bg-slate-950 border-slate-800 focus:border-sky-500 h-8 text-xs font-mono"
+                                      />
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+
+                              <Separator className="bg-slate-800/40" />
+
+                              {/* Dimensiones Ítem 2 (Secundario) */}
+                              <div className="space-y-2 text-left bg-slate-950/40 border border-slate-850 p-3 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Dimensiones Ítem 2</Label>
+                                  <Badge variant="outline" className="text-[8px] border-emerald-500/20 text-emerald-400 h-4 px-1 leading-none font-bold">SECONDARY</Badge>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 pt-1">
+                                  <div className="space-y-1">
+                                    <Label htmlFor="iL2" className="text-[8px] text-slate-500 font-bold">LENGTH</Label>
+                                    <Input
+                                      id="iL2"
+                                      type="number"
+                                      value={item2.length}
+                                      onChange={(e) => handleItem2Change('length', e.target.value)}
+                                      className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-8 text-xs font-mono text-emerald-400"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label htmlFor="iW2" className="text-[8px] text-slate-500 font-bold">WIDTH</Label>
+                                    <Input
+                                      id="iW2"
+                                      type="number"
+                                      value={item2.width}
+                                      onChange={(e) => handleItem2Change('width', e.target.value)}
+                                      className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-8 text-xs font-mono text-emerald-400"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label htmlFor="iH2" className="text-[8px] text-slate-500 font-bold">HEIGHT</Label>
+                                    <Input
+                                      id="iH2"
+                                      type="number"
+                                      value={item2.height}
+                                      onChange={(e) => handleItem2Change('height', e.target.value)}
+                                      className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-8 text-xs font-mono text-emerald-400"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Patrón de Distribución */}
+                              <div className="space-y-1.5 text-left">
+                                <Label className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Patrón de Distribución</Label>
+                                <div className="grid grid-cols-5 gap-1">
+                                  {[
+                                    { id: 'optimal', label: 'Opti' },
+                                    { id: 'split', label: 'Split' },
+                                    { id: 'x-first', label: 'Largo' },
+                                    { id: 'y-first', label: 'Ancho' },
+                                    { id: 'z-first', label: 'Fondo' }
+                                  ].map((mode) => (
+                                    <button
+                                      key={mode.id}
+                                      type="button"
+                                      onClick={() => setDistributionMode(mode.id as any)}
+                                      className={`h-6 text-[8px] uppercase font-bold rounded border transition-colors ${
+                                        distributionMode === mode.id
+                                          ? 'bg-sky-500 border-sky-400 text-slate-950'
+                                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900/60'
+                                      }`}
+                                      title={
+                                        mode.id === 'optimal' ? 'Optimización greedy mixta' :
+                                        mode.id === 'split' ? 'Empacar todo el Item 1, luego el Item 2' :
+                                        mode.id === 'x-first' ? 'Ordenar a lo largo (Eje X)' :
+                                        mode.id === 'y-first' ? 'Ordenar a lo ancho (Eje Y)' :
+                                        'Ordenar hacia el fondo / vertical (Eje Z)'
+                                      }
+                                    >
+                                      {mode.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </motion.div>
                   )}
@@ -566,8 +693,13 @@ export default function App() {
                     setContainer({ length: '20', width: '20', height: '20' });
                     setErrorMargin(false);
                     setMultiItemMode(false);
+                    setPalletMode(false);
+                    setPalletType('eur');
+                    setLimitMode('volume');
                     setMaxVolume1('');
                     setMaxVolume2('');
+                    setMaxCount1('');
+                    setMaxCount2('');
                     setDistributionMode('optimal');
                   }}
                   type="button"
