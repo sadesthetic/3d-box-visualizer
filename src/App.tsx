@@ -153,31 +153,35 @@ export default function App() {
   }, [item2, itemUnit]);
 
   const handleItemChange = (key: keyof Dimensions, value: string) => {
-    if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
-      setItem((prev) => ({ ...prev, [key]: value }));
+    const normalized = value.replace(',', '.');
+    if (normalized === '' || /^\d*\.?\d{0,2}$/.test(normalized)) {
+      setItem((prev) => ({ ...prev, [key]: normalized }));
     }
   };
 
   const handleItem2Change = (key: keyof Dimensions, value: string) => {
-    if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
-      setItem2((prev) => ({ ...prev, [key]: value }));
+    const normalized = value.replace(',', '.');
+    if (normalized === '' || /^\d*\.?\d{0,2}$/.test(normalized)) {
+      setItem2((prev) => ({ ...prev, [key]: normalized }));
     }
   };
 
   const handleContainerChange = (key: keyof Dimensions, value: string) => {
-    if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+    const normalized = value.replace(',', '.');
+    if (normalized === '' || /^\d*\.?\d{0,2}$/.test(normalized)) {
       setContainer((prev) => {
         if (forceSquareContainer && key === 'length') {
-          return { length: value, width: value, height: value };
+          return { length: normalized, width: normalized, height: normalized };
         }
-        return { ...prev, [key]: value };
+        return { ...prev, [key]: normalized };
       });
     }
   };
 
   const handleNumericInput = (value: string, setter: (val: string) => void) => {
-    if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
-      setter(value);
+    const normalized = value.replace(',', '.');
+    if (normalized === '' || /^\d*\.?\d{0,2}$/.test(normalized)) {
+      setter(normalized);
     }
   };
 
@@ -245,7 +249,8 @@ export default function App() {
                     <Label htmlFor="iL" className="text-[10px] text-slate-400">LENGTH</Label>
                     <Input
                       id="iL"
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={item.length}
                       onChange={(e) => handleItemChange('length', e.target.value)}
                       className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
@@ -255,7 +260,8 @@ export default function App() {
                     <Label htmlFor="iW" className="text-[10px] text-slate-400">WIDTH</Label>
                     <Input
                       id="iW"
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={item.width}
                       onChange={(e) => handleItemChange('width', e.target.value)}
                       className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
@@ -265,7 +271,8 @@ export default function App() {
                     <Label htmlFor="iH" className="text-[10px] text-slate-400">HEIGHT</Label>
                     <Input
                       id="iH"
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={item.height}
                       onChange={(e) => handleItemChange('height', e.target.value)}
                       className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
@@ -332,7 +339,8 @@ export default function App() {
                     <Label htmlFor="cL" className="text-[10px] text-slate-400">{forceSquareContainer ? 'SIZE (L, W, H)' : 'LENGTH'}</Label>
                     <Input
                       id="cL"
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={container.length}
                       onChange={(e) => handleContainerChange('length', e.target.value)}
                       className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
@@ -342,7 +350,8 @@ export default function App() {
                     <Label htmlFor="cW" className="text-[10px] text-slate-400">WIDTH</Label>
                     <Input
                       id="cW"
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={container.width}
                       onChange={(e) => handleContainerChange('width', e.target.value)}
                       disabled={forceSquareContainer}
@@ -353,7 +362,8 @@ export default function App() {
                     <Label htmlFor="cH" className="text-[10px] text-slate-400">HEIGHT</Label>
                     <Input
                       id="cH"
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={container.height}
                       onChange={(e) => handleContainerChange('height', e.target.value)}
                       disabled={forceSquareContainer}
@@ -519,7 +529,8 @@ export default function App() {
                                   </div>
                                   <Input
                                     id="maxVol1"
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     placeholder="Ilimitado"
                                     value={maxVolume1}
                                     onChange={(e) => handleNumericInput(e.target.value, setMaxVolume1)}
@@ -536,7 +547,8 @@ export default function App() {
                                     </div>
                                     <Input
                                       id="maxVol2"
-                                      type="number"
+                                      type="text"
+                                      inputMode="decimal"
                                       placeholder="Ilimitado"
                                       value={maxVolume2}
                                       onChange={(e) => handleNumericInput(e.target.value, setMaxVolume2)}
@@ -561,7 +573,8 @@ export default function App() {
                                   </div>
                                   <Input
                                     id="maxQty1"
-                                    type="number"
+                                    type="text"
+                                    inputMode="numeric"
                                     placeholder="Ilimitado"
                                     value={maxCount1}
                                     onChange={(e) => handleNumericInput(e.target.value, setMaxCount1)}
@@ -578,7 +591,8 @@ export default function App() {
                                     </div>
                                     <Input
                                       id="maxQty2"
-                                      type="number"
+                                      type="text"
+                                      inputMode="numeric"
                                       placeholder="Ilimitado"
                                       value={maxCount2}
                                       onChange={(e) => handleNumericInput(e.target.value, setMaxCount2)}
@@ -613,7 +627,8 @@ export default function App() {
                                       <Label htmlFor="iL2" className="text-[8px] text-slate-500 font-bold">LENGTH</Label>
                                       <Input
                                         id="iL2"
-                                        type="number"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={item2.length}
                                         onChange={(e) => handleItem2Change('length', e.target.value)}
                                         className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-8 text-xs font-mono text-emerald-400"
@@ -623,7 +638,8 @@ export default function App() {
                                       <Label htmlFor="iW2" className="text-[8px] text-slate-500 font-bold">WIDTH</Label>
                                       <Input
                                         id="iW2"
-                                        type="number"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={item2.width}
                                         onChange={(e) => handleItem2Change('width', e.target.value)}
                                         className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-8 text-xs font-mono text-emerald-400"
@@ -633,7 +649,8 @@ export default function App() {
                                       <Label htmlFor="iH2" className="text-[8px] text-slate-500 font-bold">HEIGHT</Label>
                                       <Input
                                         id="iH2"
-                                        type="number"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={item2.height}
                                         onChange={(e) => handleItem2Change('height', e.target.value)}
                                         className="bg-slate-950 border-slate-800 focus:border-emerald-500 h-8 text-xs font-mono text-emerald-400"
