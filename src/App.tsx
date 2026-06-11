@@ -23,7 +23,7 @@ export default function App() {
   const [errorMargin, setErrorMargin] = useState(false);
   const [multiItemMode, setMultiItemMode] = useState(false);
   const [palletMode, setPalletMode] = useState(false);
-  const [palletType, setPalletType] = useState<'eur' | 'us'>('eur');
+  const [palletType, setPalletType] = useState<'eur' | 'us'>('us');
   const [limitMode, setLimitMode] = useState<'volume' | 'quantity'>('volume');
   const [volumeUnit, setVolumeUnit] = useState<'ft3' | 'cm3' | 'm3'>('ft3');
   const [maxVolume1, setMaxVolume1] = useState('');

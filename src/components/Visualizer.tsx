@@ -500,11 +500,7 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
           if (created >= displayLimit) break;
           
           const isItem2 = pItem.type === 2;
-          const originalDx = pItem.originalDx ?? pItem.dx;
-          const originalDy = pItem.originalDy ?? pItem.dy;
-          const originalDz = pItem.originalDz ?? pItem.dz;
-
-          const itemGeo = new THREE.BoxGeometry(originalDx, originalDz, originalDy);
+          const itemGeo = new THREE.BoxGeometry(pItem.dx, pItem.dz, pItem.dy);
           const itemMat = new THREE.MeshPhongMaterial({ 
               color: isItem2 ? 0x10b981 : 0x38bdf8, // Emerald Green for Item 2, Sky Blue for Item 1
               transparent: true, 
@@ -520,7 +516,7 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
           // Positioning from corner (centered horizontally, bottom-aligned inside its slot)
           m.position.set(
               (-cL / 2) + pItem.x + (pItem.dx / 2),
-              pItem.z + (originalDz / 2),
+              pItem.z + (pItem.dz / 2),
               (-cW / 2) + pItem.y + (pItem.dy / 2)
           );
 
