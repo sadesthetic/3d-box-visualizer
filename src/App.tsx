@@ -39,6 +39,7 @@ export default function App() {
   const [forceSquareContainer, setForceSquareContainer] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [convertOnUnitChange, setConvertOnUnitChange] = useState(true);
+  const [statsVolumeUnit, setStatsVolumeUnit] = useState<'in3' | 'ft3' | 'm3'>('m3');
 
   const convertUnit = (val: number, from: 'cm' | 'in' | 'ft', to: 'cm' | 'in' | 'ft'): number => {
     if (from === to) return val;
@@ -50,6 +51,28 @@ export default function App() {
     if (to === 'in') return cm / 2.54;
     if (to === 'ft') return cm / 30.48;
     return val;
+  };
+
+  const convertVolume = (
+    volume: number,
+    fromUnit: 'in' | 'cm' | 'ft',
+    toCubicUnit: 'in3' | 'ft3' | 'm3'
+  ): number => {
+    let volInInches3 = volume;
+    if (fromUnit === 'cm') {
+      volInInches3 = volume / 16.387064;
+    } else if (fromUnit === 'ft') {
+      volInInches3 = volume * 1728;
+    }
+
+    if (toCubicUnit === 'in3') {
+      return volInInches3;
+    } else if (toCubicUnit === 'ft3') {
+      return volInInches3 / 1728;
+    } else if (toCubicUnit === 'm3') {
+      return volInInches3 * 0.000016387064;
+    }
+    return volume;
   };
 
   const handleContainerUnitChange = (newUnit: 'cm' | 'in' | 'ft') => {
@@ -163,6 +186,28 @@ export default function App() {
     if (itemUnit === 'ft') return vol;
     return itemUnit === 'in' ? vol / 1728 : vol / 28316.846592;
   }, [item2, itemUnit]);
+
+  const containerVolume = useMemo(() => {
+    const l = parseFloat(container.length) || 0;
+    const w = parseFloat(container.width) || 0;
+    const h = parseFloat(container.height) || 0;
+    return l * w * h;
+  }, [container]);
+
+  const usedVolumeRaw = useMemo(() => {
+    return Math.max(0, containerVolume - result.waste);
+  }, [containerVolume, result.waste]);
+
+  const getFormattedVolume = (volRaw: number) => {
+    const converted = convertVolume(volRaw, containerUnit, statsVolumeUnit);
+    if (statsVolumeUnit === 'm3') {
+      return `${converted.toFixed(3)} m³`;
+    } else if (statsVolumeUnit === 'ft3') {
+      return `${converted.toFixed(1)} ft³`;
+    } else {
+      return `${converted.toFixed(0)} in³`;
+    }
+  };
 
   const handleItemChange = (key: keyof Dimensions, value: string) => {
     const normalized = value.replace(',', '.');
@@ -812,15 +857,34 @@ export default function App() {
                       transition={{ type: "spring", damping: 20, stiffness: 100 }}
                       className="flex flex-col gap-2 items-start pointer-events-auto"
                     >
-                      {/* Row 1: label + waste */}
-                      <div className="flex items-center gap-3">
+                      {/* Row 1: label + used space + waste + unit selector */}
+                      <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 shadow-xl">
                           <div className={`w-1.5 h-1.5 rounded-full ${result.efficiency > 80 ? 'bg-emerald-500' : result.efficiency > 50 ? 'bg-amber-500' : 'bg-rose-500'} animate-pulse`} />
                           <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Efficiency Metrics</span>
                         </div>
                         <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 flex items-center gap-3 shadow-xl">
+                          <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Used Space</span>
+                          <span className="text-[11px] font-mono text-emerald-400">{getFormattedVolume(usedVolumeRaw)}</span>
+                        </div>
+                        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg px-3 py-1.5 flex items-center gap-3 shadow-xl">
                           <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Waste</span>
-                          <span className="text-[11px] font-mono text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
+                          <span className="text-[11px] font-mono text-rose-400">{getFormattedVolume(result.waste)}</span>
+                        </div>
+                        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-lg p-0.5 flex gap-0.5 shadow-xl pointer-events-auto">
+                          {(['in3', 'ft3', 'm3'] as const).map((u) => (
+                            <button
+                              key={u}
+                              onClick={() => setStatsVolumeUnit(u)}
+                              className={`px-2 py-0.5 rounded text-[8px] font-mono font-bold uppercase transition-all duration-150 ${
+                                statsVolumeUnit === u
+                                  ? 'bg-sky-500 text-slate-950 shadow-sm'
+                                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
+                              }`}
+                            >
+                              {u.replace('3', '³')}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
@@ -950,9 +1014,31 @@ export default function App() {
                           style={{ width: `${result.efficiency}%` }}
                         />
                       </div>
-                      <div className="flex justify-between items-center pt-1">
+                      <div className="flex justify-between items-center pt-1 border-b border-slate-800/50 pb-2">
+                        <span className="text-[9px] text-slate-500 uppercase font-bold">Used Space</span>
+                        <span className="text-xs font-mono text-emerald-400">{getFormattedVolume(usedVolumeRaw)}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-1 pb-2">
                         <span className="text-[9px] text-slate-500 uppercase font-bold">Wasted Area</span>
-                        <span className="text-xs font-mono text-rose-400">{result.waste.toFixed(1)} {containerUnit}³</span>
+                        <span className="text-xs font-mono text-rose-400">{getFormattedVolume(result.waste)}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-800/50">
+                        <span className="text-[9px] text-slate-500 uppercase font-bold">Volume Unit</span>
+                        <div className="bg-slate-950 border border-slate-800 rounded p-0.5 flex gap-0.5">
+                          {(['in3', 'ft3', 'm3'] as const).map((u) => (
+                            <button
+                              key={u}
+                              onClick={() => setStatsVolumeUnit(u)}
+                              className={`px-2 py-0.5 rounded text-[8px] font-mono font-bold uppercase transition-all duration-150 ${
+                                statsVolumeUnit === u
+                                  ? 'bg-sky-500 text-slate-950 shadow-sm'
+                                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'
+                              }`}
+                            >
+                              {u.replace('3', '³')}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
