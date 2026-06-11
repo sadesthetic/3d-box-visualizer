@@ -8,8 +8,8 @@ interface VisualizerProps {
   container: Dimensions;
   secondaryItem?: Dimensions;
   result: PackingResult;
-  unit: 'in' | 'cm';
-  itemUnit: 'in' | 'cm';
+  unit: 'in' | 'cm' | 'ft';
+  itemUnit: 'in' | 'cm' | 'ft';
   highlightContainer?: boolean;
 }
 
@@ -388,9 +388,14 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       for (const pItem of result.items) {
           if (created >= displayLimit) break;
           
-          const itemGeo = new THREE.BoxGeometry(pItem.dx, pItem.dz, pItem.dy);
+          const isItem2 = pItem.type === 2;
+          const originalDx = pItem.originalDx ?? pItem.dx;
+          const originalDy = pItem.originalDy ?? pItem.dy;
+          const originalDz = pItem.originalDz ?? pItem.dz;
+
+          const itemGeo = new THREE.BoxGeometry(originalDx, originalDz, originalDy);
           const itemMat = new THREE.MeshPhongMaterial({ 
-              color: 0x38bdf8, 
+              color: isItem2 ? 0x10b981 : 0x38bdf8, // Emerald Green for Item 2, Sky Blue for Item 1
               transparent: true, 
               opacity: 0, // Starts at 0 for fade-in
               polygonOffset: true,
@@ -399,21 +404,18 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
               depthWrite: true
           });
           const m = new THREE.Mesh(itemGeo, itemMat);
-          m.userData = { isPackedItem: true };
+          m.userData = { isPackedItem: true, type: pItem.type };
           
-          // Positioning from corner
+          // Positioning from corner (centered horizontally, bottom-aligned inside its slot)
           m.position.set(
               (-cL / 2) + pItem.x + (pItem.dx / 2),
-              pItem.z + (pItem.dz / 2),
+              pItem.z + (originalDz / 2),
               (-cW / 2) + pItem.y + (pItem.dy / 2)
           );
 
           const e = new THREE.EdgesGeometry(itemGeo);
           const l = new THREE.LineSegments(e, new THREE.LineBasicMaterial({color: 0xffffff, opacity: 0.3, transparent: true}));
           m.add(l);
-
-          // We also need to add userData to the mesh for the 2D viewer click logic
-          m.userData = { isPackedItem: true };
 
           packedGroup.add(m);
           created++;
@@ -432,6 +434,21 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
       scene.add(packedGroup);
       packedGroupRef.current = packedGroup;
     }
+
+    // Auto-fit camera if unit/scale changes drastically
+    if (cameraRef.current && controlsRef.current) {
+      const parsedCL = parseFloat(container.length.toString()) || 1;
+      const parsedCH = parseFloat(container.height.toString()) || 1;
+      const parsedCW = parseFloat(container.width.toString()) || 1;
+      const maxDim = Math.max(parsedCL, parsedCH, parsedCW);
+      
+      const currentCamDist = cameraRef.current.position.length();
+      if (currentCamDist < maxDim * 0.5 || currentCamDist > maxDim * 4) {
+        cameraRef.current.position.set(maxDim * 1.4, maxDim * 1.3, maxDim * 1.4);
+        controlsRef.current.target.set(0, parsedCH / 2, 0);
+        controlsRef.current.update();
+      }
+    }
   }, [item, container, result, unit]);
 
 
@@ -444,16 +461,20 @@ export function Visualizer({ item, container, result, unit, itemUnit, highlightC
     const effectiveUnit = itemUnit;
     
     // Convert if necessary
-    let displayW = selectedFace.width;
-    let displayH = selectedFace.height;
+    const convertVal = (val: number, from: 'cm' | 'in' | 'ft', to: 'cm' | 'in' | 'ft') => {
+      if (from === to) return val;
+      let cm = val;
+      if (from === 'in') cm = val * 2.54;
+      else if (from === 'ft') cm = val * 30.48;
+
+      if (to === 'cm') return cm;
+      if (to === 'in') return cm / 2.54;
+      if (to === 'ft') return cm / 30.48;
+      return val;
+    };
     
-    if (unit === 'in' && effectiveUnit === 'cm') {
-       displayW *= 2.54;
-       displayH *= 2.54;
-    } else if (unit === 'cm' && effectiveUnit === 'in') {
-       displayW /= 2.54;
-       displayH /= 2.54;
-    }
+    let displayW = convertVal(selectedFace.width, unit, effectiveUnit);
+    let displayH = convertVal(selectedFace.height, unit, effectiveUnit);
 
     const maxDim = 140; // Max size for the view
     const scale = maxDim / Math.max(displayW, displayH);
