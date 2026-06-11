@@ -9,7 +9,7 @@ import { Button } from './components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Separator } from './components/ui/separator';
 import { Badge } from './components/ui/badge';
-import { Box, Container, Info, Maximize2, RotateCcw, Lightbulb, TrendingUp } from 'lucide-react';
+import { Box, Container, Info, Maximize2, RotateCcw, Lightbulb, TrendingUp, Link2, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -38,6 +38,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('visualizer');
   const [forceSquareContainer, setForceSquareContainer] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [convertOnUnitChange, setConvertOnUnitChange] = useState(true);
 
   const convertUnit = (val: number, from: 'cm' | 'in' | 'ft', to: 'cm' | 'in' | 'ft'): number => {
     if (from === to) return val;
@@ -52,21 +53,32 @@ export default function App() {
   };
 
   const handleContainerUnitChange = (newUnit: 'cm' | 'in' | 'ft') => {
-    setContainer(prev => ({
-      length: convertUnit(parseFloat(prev.length) || 0, containerUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
-      width: convertUnit(parseFloat(prev.width) || 0, containerUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
-      height: convertUnit(parseFloat(prev.height) || 0, containerUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
-    }));
+    if (convertOnUnitChange) {
+      setContainer(prev => ({
+        length: convertUnit(parseFloat(prev.length) || 0, containerUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
+        width: convertUnit(parseFloat(prev.width) || 0, containerUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
+        height: convertUnit(parseFloat(prev.height) || 0, containerUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
+      }));
+    }
     setContainerUnit(newUnit);
     setShowResult(false);
   };
 
   const handleItemUnitChange = (newUnit: 'cm' | 'in' | 'ft') => {
-    setItem(prev => ({
-      length: convertUnit(parseFloat(prev.length) || 0, itemUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
-      width: convertUnit(parseFloat(prev.width) || 0, itemUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
-      height: convertUnit(parseFloat(prev.height) || 0, itemUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
-    }));
+    if (convertOnUnitChange) {
+      setItem(prev => ({
+        length: convertUnit(parseFloat(prev.length) || 0, itemUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
+        width: convertUnit(parseFloat(prev.width) || 0, itemUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
+        height: convertUnit(parseFloat(prev.height) || 0, itemUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
+      }));
+      if (item2.length || item2.width || item2.height) {
+        setItem2(prev => ({
+          length: convertUnit(parseFloat(prev.length) || 0, itemUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
+          width: convertUnit(parseFloat(prev.width) || 0, itemUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
+          height: convertUnit(parseFloat(prev.height) || 0, itemUnit, newUnit).toFixed(newUnit === 'ft' ? 2 : 1),
+        }));
+      }
+    }
     setItemUnit(newUnit);
     setShowResult(false);
   };
@@ -211,26 +223,52 @@ export default function App() {
 
             <div className="flex-1 space-y-6 p-6 overflow-y-auto">
               {/* Unit Toggle */}
-              <section className="grid grid-cols-2 gap-4">
-                <div className="space-y-3 text-left">
-                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Item Unit</Label>
-                  <Tabs value={itemUnit} onValueChange={(v) => handleItemUnitChange(v as 'in' | 'cm' | 'ft')} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 bg-slate-950 border border-slate-800">
-                      <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">IN</TabsTrigger>
-                      <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">CM</TabsTrigger>
-                      <TabsTrigger value="ft" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">FT</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+              <section className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3 text-left">
+                    <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Item Unit</Label>
+                    <Tabs value={itemUnit} onValueChange={(v) => handleItemUnitChange(v as 'in' | 'cm' | 'ft')} className="w-full">
+                      <TabsList className="grid w-full grid-cols-3 bg-slate-950 border border-slate-800">
+                        <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">IN</TabsTrigger>
+                        <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">CM</TabsTrigger>
+                        <TabsTrigger value="ft" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">FT</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                  <div className="space-y-3 text-left">
+                    <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Container Unit</Label>
+                    <Tabs value={containerUnit} onValueChange={(v) => handleContainerUnitChange(v as 'in' | 'cm' | 'ft')} className="w-full">
+                      <TabsList className="grid w-full grid-cols-3 bg-slate-950 border border-slate-800">
+                        <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">IN</TabsTrigger>
+                        <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">CM</TabsTrigger>
+                        <TabsTrigger value="ft" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">FT</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
                 </div>
-                <div className="space-y-3 text-left">
-                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Container Unit</Label>
-                  <Tabs value={containerUnit} onValueChange={(v) => handleContainerUnitChange(v as 'in' | 'cm' | 'ft')} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 bg-slate-950 border border-slate-800">
-                      <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">IN</TabsTrigger>
-                      <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">CM</TabsTrigger>
-                      <TabsTrigger value="ft" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">FT</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[10px] text-slate-500 font-semibold font-mono uppercase tracking-wider">Conversión:</span>
+                  <button
+                    onClick={() => setConvertOnUnitChange(!convertOnUnitChange)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-bold tracking-wide transition-all duration-200 ${
+                      convertOnUnitChange
+                        ? 'bg-sky-500/10 border-sky-500/30 text-sky-400 hover:bg-sky-500/20'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                    }`}
+                  >
+                    {convertOnUnitChange ? (
+                      <>
+                        <Link2 className="w-3 h-3" />
+                        <span>CONVERTIR</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3 h-3" />
+                        <span>FIJO</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </section>
 
