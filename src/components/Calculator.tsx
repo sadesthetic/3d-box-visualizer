@@ -27,35 +27,53 @@ function CalculatorCard({ isPrimary, onCompareToggle, isComparing, onRemove }: {
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
   const [unit, setUnit] = useState<'in' | 'cm'>('in');
+  const [inputMode, setInputMode] = useState<'3d' | 'volume'>('3d');
+  const [totalVolumeInput, setTotalVolumeInput] = useState('');
 
   const results = useMemo(() => {
     const p = parseFloat(pricePerFt) || 0;
-    let l = parseFloat(length) || 0;
-    let w = parseFloat(width) || 0;
-    let h = parseFloat(height) || 0;
 
-    if (unit === 'cm') {
-      l = l * 0.393701;
-      w = w * 0.393701;
-      h = h * 0.393701;
+    if (inputMode === 'volume') {
+      const totalCuFt = parseFloat(totalVolumeInput) || 0;
+      const totalValue = totalCuFt * p;
+      const totalLiters = totalCuFt * 28.3168;
+      const costPerLiter = totalLiters > 0 ? totalValue / totalLiters : 0;
+
+      return {
+        totalValue,
+        totalCuFt,
+        yieldPerInch: 0,
+        costPerLiter,
+        hasInputs: p > 0 && totalCuFt > 0
+      };
+    } else {
+      let l = parseFloat(length) || 0;
+      let w = parseFloat(width) || 0;
+      let h = parseFloat(height) || 0;
+
+      if (unit === 'cm') {
+        l = l * 0.393701;
+        w = w * 0.393701;
+        h = h * 0.393701;
+      }
+
+      const volumeInches = l * w * h;
+      const totalCuFt = volumeInches / 1728;
+      const totalValue = totalCuFt * p;
+      
+      const yieldPerInch = volumeInches > 0 ? totalValue / volumeInches : 0;
+      const totalLiters = totalCuFt * 28.3168;
+      const costPerLiter = totalLiters > 0 ? totalValue / totalLiters : 0;
+
+      return {
+        totalValue,
+        totalCuFt,
+        yieldPerInch,
+        costPerLiter,
+        hasInputs: p > 0 && l > 0 && w > 0 && h > 0
+      };
     }
-
-    const volumeInches = l * w * h;
-    const totalCuFt = volumeInches / 1728;
-    const totalValue = totalCuFt * p;
-    
-    const yieldPerInch = volumeInches > 0 ? totalValue / volumeInches : 0;
-    const totalLiters = totalCuFt * 28.3168;
-    const costPerLiter = totalLiters > 0 ? totalValue / totalLiters : 0;
-
-    return {
-      totalValue,
-      totalCuFt,
-      yieldPerInch,
-      costPerLiter,
-      hasInputs: p > 0 && l > 0 && w > 0 && h > 0
-    };
-  }, [pricePerFt, length, width, height, unit]);
+  }, [pricePerFt, length, width, height, unit, inputMode, totalVolumeInput]);
 
   const handleNumericInput = (value: string, setter: (val: string) => void) => {
     if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
@@ -125,63 +143,94 @@ function CalculatorCard({ isPrimary, onCompareToggle, isComparing, onRemove }: {
             <section className="space-y-3">
               <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold flex items-center gap-1.5">
                 <Ruler size={12} className="text-sky-400" />
-                Dimensions Unit
+                Calculation Mode
               </Label>
-              <Tabs value={unit} onValueChange={(v) => setUnit(v as 'in' | 'cm')} className="w-full">
+              <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as '3d' | 'volume')} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 bg-slate-950 border border-slate-800">
-                  <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-xs font-bold">INCHES</TabsTrigger>
-                  <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-xs font-bold">CENTIMETERS</TabsTrigger>
+                  <TabsTrigger value="3d" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">3D DIMENSIONS</TabsTrigger>
+                  <TabsTrigger value="volume" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-[10px] font-bold">TOTAL VOLUME (FT³)</TabsTrigger>
                 </TabsList>
               </Tabs>
             </section>
 
-            <section className="space-y-4">
-               <div className="flex items-center justify-between">
-                 <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Box Layout</Label>
-                 <Button 
-                   variant="outline" 
-                   size="sm" 
-                   className="h-6 px-2 text-[10px] uppercase font-bold border-slate-800 bg-transparent text-sky-400 hover:bg-sky-500/10 hover:text-sky-300 transition-colors"
-                   onClick={() => {
-                     if (length) {
-                       setWidth(length);
-                       setHeight(length);
-                     }
-                   }}
-                 >
-                   <Package size={10} className="mr-1" /> Make Cubic
-                 </Button>
-               </div>
-               <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] text-slate-400">LENGTH</Label>
-                  <Input
-                    type="number"
-                    value={length}
-                    onChange={(e) => handleNumericInput(e.target.value, setLength)}
-                    className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] text-slate-400">WIDTH</Label>
-                  <Input
-                    type="number"
-                    value={width}
-                    onChange={(e) => handleNumericInput(e.target.value, setWidth)}
-                    className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] text-slate-400">HEIGHT</Label>
-                  <Input
-                    type="number"
-                    value={height}
-                    onChange={(e) => handleNumericInput(e.target.value, setHeight)}
-                    className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
-                  />
-                </div>
-              </div>
-            </section>
+            {inputMode === 'volume' ? (
+              <section className="space-y-3">
+                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold flex items-center gap-1.5">
+                  <Package size={12} className="text-sky-400" />
+                  Total Volume (ft³)
+                </Label>
+                <Input
+                  type="number"
+                  value={totalVolumeInput}
+                  onChange={(e) => handleNumericInput(e.target.value, setTotalVolumeInput)}
+                  placeholder="e.g. 150.5"
+                  className="bg-slate-950 border-slate-800 focus:border-sky-500 h-10 text-sm font-mono"
+                />
+              </section>
+            ) : (
+              <>
+                <section className="space-y-3">
+                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold flex items-center gap-1.5">
+                    <Ruler size={12} className="text-sky-400" />
+                    Dimensions Unit
+                  </Label>
+                  <Tabs value={unit} onValueChange={(v) => setUnit(v as 'in' | 'cm')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-slate-950 border border-slate-800">
+                      <TabsTrigger value="in" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-xs font-bold">INCHES</TabsTrigger>
+                      <TabsTrigger value="cm" className="data-[state=active]:bg-sky-500 data-[state=active]:text-slate-950 text-xs font-bold">CENTIMETERS</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </section>
+
+                <section className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Box Layout</Label>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-6 px-2 text-[10px] uppercase font-bold border-slate-800 bg-transparent text-sky-400 hover:bg-sky-500/10 hover:text-sky-300 transition-colors"
+                      onClick={() => {
+                        if (length) {
+                          setWidth(length);
+                          setHeight(length);
+                        }
+                      }}
+                    >
+                      <Package size={10} className="mr-1" /> Make Cubic
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] text-slate-400">LENGTH</Label>
+                      <Input
+                        type="number"
+                        value={length}
+                        onChange={(e) => handleNumericInput(e.target.value, setLength)}
+                        className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] text-slate-400">WIDTH</Label>
+                      <Input
+                        type="number"
+                        value={width}
+                        onChange={(e) => handleNumericInput(e.target.value, setWidth)}
+                        className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] text-slate-400">HEIGHT</Label>
+                      <Input
+                        type="number"
+                        value={height}
+                        onChange={(e) => handleNumericInput(e.target.value, setHeight)}
+                        className="bg-slate-950 border-slate-800 focus:border-sky-500 h-9 text-sm font-mono"
+                      />
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
 
             <Separator className="bg-slate-800" />
 
@@ -218,8 +267,13 @@ function CalculatorCard({ isPrimary, onCompareToggle, isComparing, onRemove }: {
 
                       <div className="space-y-3 pt-2">
                         <ResultItem label="Total Volume" value={`${results.totalCuFt.toFixed(2)} ft³`} unit="" />
+                        {inputMode === '3d' && (
+                          <>
+                            <div className="h-px bg-slate-800 w-full" />
+                            <ResultItem label="Yield per Inch" value={`$${results.yieldPerInch.toFixed(3)}`} unit="" highlight />
+                          </>
+                        )}
                         <div className="h-px bg-slate-800 w-full" />
-                        <ResultItem label="Yield per Inch" value={`$${results.yieldPerInch.toFixed(3)}`} unit="" highlight />
                         <ResultItem label="Cost per Liter" value={`$${results.costPerLiter.toFixed(3)}`} unit="/ L" />
                       </div>
                     </CardContent>
